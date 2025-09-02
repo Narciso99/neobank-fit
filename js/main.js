@@ -1,25 +1,40 @@
+/**
+ * main.js - Inicializa o app
+ * Verifica login e carrega a tela correta
+ */
+
+// Solicita permissão para notificações
 if ('Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();
 }
 
+// Função para mostrar toast
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  if (t) {
-    t.textContent = msg;
-    t.classList.add('show');
+  const toast = document.getElementById('toast');
+  if (toast) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    // Notificação do navegador
     if (Notification.permission === 'granted') {
-      new Notification('NeoBank OS', { body: msg });
+      new Notification('NeoBank FIT', { body: msg, icon: 'img/logo.svg' });
     }
-    setTimeout(() => t.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 3000);
   }
 }
 
+// Quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  const u = localStorage.getItem('currentUser');
-  if (u) {
-    db.ref('users/' + u).once('value').then(s => s.exists() ? loadDashboard(u) : showLoginScreen());
+  const currentUser = localStorage.getItem('currentUser');
+  if (currentUser) {
+    loadDashboard(currentUser);
   } else {
     showLoginScreen();
   }
-  setTimeout(() => lucide.createIcons(), 200);
+
+  // Inicializa ícones
+  setTimeout(() => {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }, 200);
 });
