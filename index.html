@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeoBank FIT</title>
-  <meta name="description" content="Banco virtual com Firebase, Pix e avatar" />
+  <title>NeoBank OS</title>
+  <meta name="description" content="Banco digital com jogos, recompensas e investimentos" />
 
   <!-- Fonte Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -31,7 +31,6 @@
       appId: "1:1084469171756:web:72696d6690053182752389"
     };
 
-    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
   </script>
@@ -44,7 +43,6 @@
 </head>
 <body class="font-sans h-full bg-gray-50 dark:bg-gray-900">
 
-  <!-- Container principal -->
   <div id="app" class="min-h-screen flex flex-col"></div>
   <div id="toast" class="toast">Operação realizada!</div>
 
@@ -54,6 +52,8 @@
   <script src="js/pix.js"></script>
   <script src="js/card.js"></script>
   <script src="js/achievements.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/investments.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/main.js"></script>
 </body>
