@@ -15,8 +15,8 @@
 }
 
 body.dark .card {
-  background: #00264d;
-  border-color: #0055cc;
+  background: #0a1f3e;
+  border-color: #2a3b60;
 }
 
 .btn {
@@ -53,7 +53,7 @@ body.dark .card {
 }
 
 body.dark .header {
-  border-color: #0055cc;
+  border-color: #2a3b60;
 }
 
 .balance-display {
@@ -66,6 +66,11 @@ body.dark .header {
 
 body.dark .balance-display {
   color: #00a0ff;
+}
+
+.osd {
+  font-size: 0.7em;
+  color: #555;
 }
 
 .input-group {
