@@ -75,15 +75,14 @@ function handleLogin(e) {
       const user = snapshot.val();
       if (user && user.password === password) {
         localStorage.setItem('currentUser', username);
-        showToast('Bem-vindo(a) ao NeoBank OS!');
+        showToast('Bem-vindo ao NeoBank OS!');
         loadDashboard(username);
       } else {
         alert('Usuário ou senha incorretos.');
       }
     })
     .catch(err => {
-      console.error('Erro Firebase:', err);
-      alert('Erro ao conectar.');
+      alert('Erro: ' + err.message);
     });
 }
 
@@ -115,7 +114,7 @@ function handleRegister(e) {
       db.ref('users/' + username).set(newUser)
         .then(() => {
           localStorage.setItem('currentUser', username);
-          showToast('Conta criada! +100 OSD!');
+          showToast('Conta criada! +100 OSD de boas-vindas!');
           loadDashboard(username);
         })
         .catch(err => {
