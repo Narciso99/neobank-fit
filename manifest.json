@@ -1,7 +1,7 @@
 {
-  "name": "NeoBank FIT",
+  "name": "NeoBank OS",
   "short_name": "NeoBank",
-  "description": "Banco digital fictício com Pix, Firebase e gamificação",
+  "description": "Banco digital com jogos, Pix e investimentos simulados",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -56,13 +56,7 @@
       "src": "img/screenshot1.png",
       "type": "image/png",
       "sizes": "1080x1920",
-      "description": "Tela de login com avatar e logo"
-    },
-    {
-      "src": "img/screenshot2.png",
-      "type": "image/png",
-      "sizes": "1080x1920",
-      "description": "Dashboard com saldo e botões de ação"
+      "description": "Tela de login do NeoBank OS"
     }
   ]
 }
