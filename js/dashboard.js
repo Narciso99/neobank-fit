@@ -1,6 +1,6 @@
 /**
  * dashboard.js - NeoBank OS
- * Tela principal com suporte a OSD, Jogos, Investimentos, Pix, Dark Mode
+ * Tela principal completa com Jogos, Investimentos, Resgate por Código e OSD
  */
 
 let currentUser = null;
@@ -11,10 +11,7 @@ let currentUser = null;
 function loadDashboard(username) {
   currentUser = username;
 
-  // Referência ao usuário no Firebase
   const userRef = db.ref('users/' + username);
-
-  // Escuta mudanças em tempo real
   userRef.on('value', (snapshot) => {
     const user = snapshot.val();
 
@@ -42,7 +39,7 @@ function renderDashboard(user, username) {
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Gera lista de transações recentes
+  // Transações recentes
   const transactions = Object.values(user.transactions || {}).slice(-5).reverse();
   const transactionItems = transactions.length ? transactions.map(t => {
     const icons = {
@@ -58,7 +55,7 @@ function renderDashboard(user, username) {
       withdraw: `-${t.amount} OSD`,
       pix_in: `+${t.amount} (Pix) ← ${t.target}`,
       pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      investment_gain: `💰 +${t.amount} OSD de investimento`
+      investment_gain: `💰 +${t.amount.toFixed(2)} OSD de investimento`
     }[t.type] || t.type;
 
     return `
@@ -98,10 +95,6 @@ function renderDashboard(user, username) {
 
       <!-- Ações Rápidas -->
       <div class="grid grid-cols-2 gap-3 mb-6">
-        <button onclick="showTransactionModal('deposit')" class="btn btn-secondary py-4">
-          <i data-lucide="plus-circle" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Depositar</span>
-        </button>
         <button onclick="showTransactionModal('withdraw')" class="btn btn-secondary py-4">
           <i data-lucide="minus-circle" class="w-5 h-5 mx-auto mb-1"></i>
           <span class="text-sm">Sacar</span>
@@ -114,41 +107,18 @@ function renderDashboard(user, username) {
           <i data-lucide="credit-card" class="w-5 h-5 mx-auto mb-1"></i>
           <span class="text-sm">Cartão</span>
         </button>
-      </div>
-
-      <!-- Jogos e Investimentos -->
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <button onclick="showGamesScreen()" class="btn btn-secondary py-4">
-          <i data-lucide="gamepad" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Jogos</span>
-        </button>
         <button onclick="showInvestmentsScreen()" class="btn btn-secondary py-4">
           <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-1"></i>
           <span class="text-sm">Investir</span>
         </button>
       </div>
 
-      <!-- Resumo Financeiro -->
+      <!-- Jogos e Resgate -->
       <div class="card">
-        <h3 class="font-semibold mb-3">Resumo Financeiro</h3>
-        <div class="space-y-3">
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-            <span class="text-muted">Depósitos</span>
-            <span>${getTotalByType(user.transactions, 'deposit').toFixed(2)} OSD</span>
-          </div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-            <span class="text-muted">Saques</span>
-            <span>${getTotalByType(user.transactions, 'withdraw').toFixed(2)} OSD</span>
-          </div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-            <span class="text-muted">Pix Recebido</span>
-            <span class="text-green-600 dark:text-green-400">+${getTotalByType(user.transactions, 'pix_in').toFixed(2)} OSD</span>
-          </div>
-          <div class="flex justify-between py-2">
-            <span class="text-muted">Investimentos</span>
-            <span class="text-purple-600 dark:text-purple-400">+${getTotalByType(user.transactions, 'investment_gain').toFixed(2)} OSD</span>
-          </div>
-        </div>
+        <h3 class="font-semibold mb-3">Ganhe OSD Jogando 🎮</h3>
+        <p class="text-sm text-muted mb-3">Jogue, ganhe OSD e resgate com código</p>
+        <button onclick="showGamesScreen()" class="btn btn-primary w-full mb-2">Jogar e Ganhar OSD</button>
+        <button onclick="showRedemptionModal('${username}')" class="btn btn-secondary w-full">Resgatar Código</button>
       </div>
 
       <!-- Histórico -->
@@ -163,7 +133,7 @@ function renderDashboard(user, username) {
       </div>
 
       <!-- Botão flutuante de tema -->
-      <button id="theme-toggle" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-105">
+      <button id="theme-toggle" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
         <i data-lucide="sun" class="w-6 h-6"></i>
       </button>
 
@@ -175,14 +145,14 @@ function renderDashboard(user, username) {
 
   // Eventos
   document.getElementById('btnLogout').onclick = () => {
-    db.ref('users/' + currentUser).off(); // Para escuta
+    db.ref('users/' + currentUser).off();
     localStorage.removeItem('currentUser');
     showToast('Até logo!');
     setTimeout(showLoginScreen, 500);
   };
 
   document.getElementById('btnHelp').onclick = () => {
-    alert('NeoBank OS\n\nApp bancário fictício com jogos, investimentos e recompensas em OSD.');
+    alert('NeoBank OS\n\nApp de simulação bancária com jogos e investimentos.\n\nApenas para fins educativos.');
   };
 
   // Botão flutuante de tema
@@ -194,21 +164,10 @@ function renderDashboard(user, username) {
     lucide.createIcons();
   };
 
-  // Inicializa o ícone inicial
   lucide.createIcons();
 
   // Renderiza transações
   renderTransactions(user.transactions || []);
-}
-
-/**
- * Calcula total por tipo de transação
- */
-function getTotalByType(transactions, type) {
-  const transArray = Object.values(transactions || {});
-  return transArray
-    .filter(t => t.type === type)
-    .reduce((sum, t) => sum + t.amount, 0);
 }
 
 /**
@@ -233,7 +192,7 @@ function renderTransactions(transactions) {
       withdraw: `-${t.amount} OSD`,
       pix_in: `+${t.amount} (Pix) ← ${t.target}`,
       pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      investment_gain: `💰 +${t.amount} OSD de investimento`
+      investment_gain: `💰 +${t.amount.toFixed(2)} OSD`
     }[t.type] || 'Transação';
 
     return `
@@ -251,7 +210,102 @@ function renderTransactions(transactions) {
 }
 
 /**
- * Mostra todas as transações (opcional)
+ * Mostra modal para resgatar código
+ */
+function showRedemptionModal(username) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="container">
+      <div class="card">
+        <h3 class="text-xl font-bold mb-4">Resgatar Código de Jogo</h3>
+        <p class="text-sm text-muted mb-4">Digite o código gerado nos jogos para adicionar OSD à sua conta.</p>
+        <div class="input-group">
+          <label>Código de Resgate</label>
+          <input type="text" id="redeemCode" placeholder="OSD-ALICE-123456789" class="w-full p-3 rounded-xl border" />
+        </div>
+        <button onclick="redeemCode('${username}')" class="btn btn-primary w-full mt-3">Resgatar</button>
+        <button onclick="loadDashboard('${username}')" class="btn btn-ghost w-full mt-2">Voltar</button>
+      </div>
+    </div>
+  `;
+  setTimeout(() => lucide.createIcons(), 100);
+}
+
+/**
+ * Resgata um código de jogo
+ */
+function redeemCode(username) {
+  const codeInput = document.getElementById('redeemCode');
+  const code = codeInput ? codeInput.value.trim() : '';
+
+  if (!code) {
+    alert('Digite um código.');
+    return;
+  }
+
+  db.ref('redemption_codes/' + code).once('value')
+    .then(snapshot => {
+      const data = snapshot.val();
+      if (!data) {
+        alert('Código inválido.');
+        return;
+      }
+      if (data.used) {
+        alert('Código já usado.');
+        return;
+      }
+      if (data.username !== username) {
+        alert('Este código não pertence a você.');
+        return;
+      }
+
+      // Atualiza saldo
+      updateUserBalance(username, data.amount);
+      addTransaction(username, 'deposit', data.amount, 'Código de Jogo');
+
+      // Marca como usado
+      db.ref('redemption_codes/' + code).update({ used: true });
+
+      showToast(`+${data.amount} OSD resgatados!`);
+      setTimeout(() => loadDashboard(username), 1000);
+    })
+    .catch(err => {
+      alert('Erro: ' + err.message);
+    });
+}
+
+/**
+ * Atualiza o saldo do usuário
+ */
+function updateUserBalance(username, amount) {
+  const ref = db.ref('users/' + username);
+  ref.transaction(user => {
+    if (user) {
+      user.balance += amount;
+      user.xp = (user.xp || 0) + amount * 0.1;
+      user.level = Math.floor(user.xp / 100) + 1;
+    }
+    return user;
+  });
+}
+
+/**
+ * Adiciona transação
+ */
+function addTransaction(username, type, amount, target = null) {
+  const transaction = {
+    id: Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().split(' ')[0],
+    type,
+    amount,
+    target
+  };
+  db.ref('users/' + username + '/transactions').push(transaction);
+}
+
+/**
+ * Mostra todas as transações
  */
 function showFullTransactions(username) {
   db.ref('users/' + username).once('value').then(snapshot => {
