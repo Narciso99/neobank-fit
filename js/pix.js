@@ -1,7 +1,3 @@
-/**
- * pix.js - Sistema de Pix
- */
-
 function showPixScreen() {
   const user = getCurrentUser();
   if (!user) return;
@@ -11,17 +7,23 @@ function showPixScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="header">
-        <h2>Pix - NeoBank FIT</h2>
+        <h2>Pix - NeoBank OS</h2>
       </div>
       <div class="card">
-        <h3>Sua Chave Pix</h3>
-        <p class="text-primary mt-2">${user.username}@neobank.fit</p>
+        <h3 class="font-semibold">Sua Chave Pix</h3>
+        <p class="text-primary mt-2">${user.username}@neobank.os</p>
         <button onclick="copyPixKey('${user.username}')" class="btn btn-secondary mt-3">Copiar Chave</button>
       </div>
       <div class="card">
-        <h3>Enviar Pix</h3>
-        <input type="text" id="pixKey" placeholder="alice@neobank.fit" class="w-full p-3 border rounded-xl my-2" />
-        <input type="number" id="pixAmount" placeholder="100" class="w-full p-3 border rounded-xl my-2" />
+        <h3 class="font-semibold">Enviar Pix</h3>
+        <div class="input-group">
+          <label>Chave (usuário@neobank.os)</label>
+          <input type="text" id="pixKey" placeholder="alice@neobank.os" class="w-full p-3 rounded-xl border" />
+        </div>
+        <div class="input-group">
+          <label>Valor (OSD)</label>
+          <input type="number" id="pixAmount" placeholder="100" class="w-full p-3 rounded-xl border" />
+        </div>
         <button onclick="sendPix()" class="btn btn-primary">Enviar Pix</button>
       </div>
       <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost mt-4">Voltar</button>
@@ -31,7 +33,7 @@ function showPixScreen() {
 }
 
 function copyPixKey(key) {
-  navigator.clipboard.writeText(key + '@neobank.fit');
+  navigator.clipboard.writeText(key + '@neobank.os');
   showToast('Chave Pix copiada!');
 }
 
@@ -41,7 +43,7 @@ function sendPix() {
   if (!keyInput || !amountInput) return;
 
   const key = keyInput.value.trim();
-  const username = key.replace('@neobank.fit', '').trim();
+  const username = key.replace('@neobank.os', '').trim();
   const amount = parseFloat(amountInput.value);
   const sender = getCurrentUser();
 
@@ -66,7 +68,7 @@ function sendPix() {
       updateUserBalance(username, amount);
       addTransaction(sender.username, 'pix_out', amount, username);
       addTransaction(username, 'pix_in', amount, sender.username);
-      showToast(`${amount} FIT$ enviado via Pix!`);
+      showToast(`${amount} OSD enviado via Pix!`);
       setTimeout(() => loadDashboard(sender.username), 1500);
     });
   });
