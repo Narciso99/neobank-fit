@@ -1,18 +1,17 @@
+// auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3 glow" />
-        <h1 class="text-3xl font-bold gradient-text">NeoBank OS</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD e invista!</p>
+        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank OS</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD!</p>
       </div>
-
       <div class="flex justify-center mb-6">
-        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200 shadow-sm" />
+        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
       </div>
-
       <div class="card">
         <form id="loginForm" class="space-y-4">
           <div class="input-group">
@@ -29,7 +28,6 @@ function showLoginScreen() {
       </div>
     </div>
   `;
-
   document.getElementById('loginForm').onsubmit = handleLogin;
   document.getElementById('btnRegister').onclick = showRegisterScreen;
   setTimeout(() => lucide.createIcons(), 100);
@@ -41,13 +39,11 @@ function showRegisterScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold gradient-text">Criar Conta</h1>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Criar Conta</h1>
       </div>
-
       <div class="flex justify-center mb-6">
         <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
       </div>
-
       <div class="card">
         <form id="registerForm" class="space-y-4">
           <div class="input-group">
@@ -58,17 +54,12 @@ function showRegisterScreen() {
             <label>Senha</label>
             <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
           </div>
-          <div class="input-group">
-            <label>Foto (URL)</label>
-            <input type="text" name="avatar" placeholder="https://i.imgur.com/abc.png" class="w-full p-3 rounded-xl border" />
-          </div>
           <button type="submit" class="btn btn-primary">Registrar</button>
           <button type="button" id="btnBack" class="btn btn-secondary mt-2">Voltar</button>
         </form>
       </div>
     </div>
   `;
-
   document.getElementById('registerForm').onsubmit = handleRegister;
   document.getElementById('btnBack').onclick = showLoginScreen;
   setTimeout(() => lucide.createIcons(), 100);
@@ -100,7 +91,6 @@ function handleRegister(e) {
   e.preventDefault();
   const username = e.target.username.value.trim();
   const password = e.target.password.value;
-  const avatar = e.target.avatar.value.trim() || 'img/avatar-default.png';
 
   db.ref('users/' + username).once('value')
     .then(snapshot => {
@@ -112,7 +102,7 @@ function handleRegister(e) {
       const newUser = {
         username,
         password,
-        avatar,
+        avatar: 'img/avatar-default.png',
         balance: 1000,
         gameBalance: 0,
         xp: 0,
@@ -125,12 +115,11 @@ function handleRegister(e) {
       db.ref('users/' + username).set(newUser)
         .then(() => {
           localStorage.setItem('currentUser', username);
-          addAchievement(username, 'Primeiro Passo', 'Conta criada com sucesso!');
-          showToast('Conta criada! +100 OSD de boas-vindas!');
+          showToast('Conta criada! +100 OSD!');
           loadDashboard(username);
         })
         .catch(err => {
-          alert('Erro ao salvar: ' + err.message);
+          alert('Erro: ' + err.message);
         });
     });
 }
