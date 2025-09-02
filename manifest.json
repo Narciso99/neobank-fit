@@ -1,0 +1,16 @@
+{
+  "name": "NeoBank FIT",
+  "short_name": "NeoBank",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#003366",
+  "theme_color": "#003366",
+  "description": "Banco virtual com Firebase e Pix",
+  "icons": [
+    {
+      "src": "img/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
