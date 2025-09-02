@@ -1,40 +1,36 @@
-/**
- * main.js - Inicializa o app
- * Verifica login e carrega a tela correta
- */
+// main.js
 
-// Solicita permissão para notificações
-if ('Notification' in window && Notification.permission === 'default') {
-  Notification.requestPermission();
+// Botão flutuante de tema
+function createThemeToggle() {
+  const toggle = document.createElement('button');
+  toggle.id = 'theme-toggle';
+  toggle.innerHTML = '<i data-lucide="sun" class="w-6 h-6"></i>';
+  toggle.onclick = toggleTheme;
+  document.body.appendChild(toggle);
+  lucide.createIcons();
 }
 
-// Função para mostrar toast
+function toggleTheme() {
+  document.documentElement.classList.toggle('dark');
+  const icon = document.querySelector('#theme-toggle i');
+  icon.setAttribute('data-lucide', document.documentElement.classList.contains('dark') ? 'moon' : 'sun');
+  lucide.createIcons();
+}
+
 function showToast(msg) {
   const toast = document.getElementById('toast');
   if (toast) {
     toast.textContent = msg;
     toast.classList.add('show');
-    // Notificação do navegador
-    if (Notification.permission === 'granted') {
-      new Notification('NeoBank FIT', { body: msg, icon: 'img/logo.svg' });
-    }
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
 }
 
-// Quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  const currentUser = localStorage.getItem('currentUser');
-  if (currentUser) {
-    loadDashboard(currentUser);
-  } else {
-    showLoginScreen();
-  }
+  createThemeToggle();
+  const user = localStorage.getItem('currentUser');
+  if (user) loadDashboard(user);
+  else showLoginScreen();
 
-  // Inicializa ícones
-  setTimeout(() => {
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-    }
-  }, 200);
+  setTimeout(() => lucide.createIcons(), 200);
 });
