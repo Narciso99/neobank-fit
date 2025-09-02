@@ -1,14 +1,16 @@
+/**
+ * dashboard.js - Tela principal com saldo e ações
+ */
+
 let currentUser = null;
 
 function loadDashboard(username) {
   currentUser = username;
 
   const userRef = db.ref('users/' + username);
-
   userRef.on('value', snapshot => {
     const user = snapshot.val();
     if (!user) {
-      alert('Usuário não encontrado.');
       showLoginScreen();
       return;
     }
@@ -23,7 +25,7 @@ function renderDashboard(user, username) {
   app.innerHTML = `
     <header class="header">
       <div class="flex items-center gap-3">
-        <img src="img/avatar-default.png" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300" />
+        <img src="${user.avatar}" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300" />
         <div>
           <h2 class="text-lg">Olá, ${user.username}!</h2>
           <p class="text-sm text-muted">Nível ${user.level}</p>
@@ -65,11 +67,6 @@ function renderDashboard(user, username) {
         <ul id="transactionList" class="space-y-2"></ul>
       </div>
 
-      <div class="card">
-        <h3 class="font-semibold mb-3">Top 5 Saldo</h3>
-        <ol id="rankingList" class="space-y-1"></ol>
-      </div>
-
       <button id="floatingHelp" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
         <i data-lucide="message-circle" class="w-6 h-6"></i>
       </button>
@@ -82,11 +79,12 @@ function renderDashboard(user, username) {
     document.getElementById('btnLogout').onclick = () => {
       db.ref('users/' + currentUser).off();
       localStorage.removeItem('currentUser');
+      showToast('Até logo!');
       showLoginScreen();
     };
 
     document.getElementById('btnHelp').onclick = () => {
-      alert('NeoBank FIT - App de simulação bancária');
+      alert('NeoBank FIT - Simulação bancária com Firebase');
     };
 
     document.getElementById('floatingHelp').onclick = () => {
@@ -94,7 +92,6 @@ function renderDashboard(user, username) {
     };
 
     renderTransactions(user.transactions || []);
-    updateRanking();
   }, 100);
 }
 
@@ -102,8 +99,8 @@ function renderTransactions(transactions) {
   const list = document.getElementById('transactionList');
   if (!list) return;
 
-  const transArray = Object.values(transactions).slice(-5).reverse();
-  list.innerHTML = transArray.length ? transArray.map(t => {
+  const recent = Object.values(transactions || {}).slice(-5).reverse();
+  list.innerHTML = recent.length ? recent.map(t => {
     const icons = {
       deposit: 'plus-circle text-green-500',
       withdraw: 'minus-circle text-red-500',
@@ -130,23 +127,4 @@ function renderTransactions(transactions) {
   }).join('') : '<li class="text-muted text-center py-2">Sem transações</li>';
 
   setTimeout(() => lucide.createIcons(), 100);
-}
-
-function updateRanking() {
-  const list = document.getElementById('rankingList');
-  if (!list) return;
-
-  db.ref('users').orderByChild('balance').limitToLast(5).once('value')
-    .then(snapshot => {
-      const users = [];
-      snapshot.forEach(child => users.push(child.val()));
-      users.reverse();
-
-      list.innerHTML = users.map((u, i) => `
-        <li class="flex justify-between py-1">
-          <span>${i+1}º ${u.username}</span>
-          <span class="font-medium">${u.balance.toFixed(2)} FIT$</span>
-        </li>
-      `).join('');
-    });
 }
