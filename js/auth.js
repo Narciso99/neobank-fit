@@ -4,9 +4,9 @@ function showLoginScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <img src="img/logo.svg" alt="NeoBank FIT" class="w-16 h-16 mx-auto mb-3" />
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank FIT</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">Banco virtual em tempo real</p>
+        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank OS</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD e invista!</p>
       </div>
 
       <div class="flex justify-center mb-6">
@@ -63,6 +63,10 @@ function showRegisterScreen() {
             <label>Senha</label>
             <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
           </div>
+          <div class="input-group">
+            <label>Foto (URL, opcional)</label>
+            <input type="text" name="avatar" placeholder="https://i.imgur.com/abc.png" class="w-full p-3 rounded-xl border" />
+          </div>
           <button type="submit" class="btn btn-primary">Registrar</button>
           <button type="button" id="btnBack" class="btn btn-secondary mt-2">Voltar</button>
         </form>
@@ -89,10 +93,6 @@ function handleLogin(e) {
       } else {
         alert('Usuário ou senha incorretos.');
       }
-    })
-    .catch(err => {
-      console.error('Erro Firebase:', err);
-      alert('Erro ao conectar ao banco de dados.');
     });
 }
 
@@ -100,6 +100,7 @@ function handleRegister(e) {
   e.preventDefault();
   const username = e.target.username.value.trim();
   const password = e.target.password.value;
+  const avatar = e.target.avatar.value.trim() || 'img/avatar-default.png';
 
   db.ref('users/' + username).once('value')
     .then(snapshot => {
@@ -111,10 +112,11 @@ function handleRegister(e) {
       const newUser = {
         username,
         password,
+        avatar,
         balance: 1000,
-        avatar: 'img/avatar-default.png',
-        level: 1,
+        gameBalance: 0,
         xp: 0,
+        level: 1,
         transactions: [],
         achievements: [],
         createdAt: new Date().toISOString()
@@ -125,9 +127,6 @@ function handleRegister(e) {
           localStorage.setItem('currentUser', username);
           addAchievement(username, 'Primeiro Passo', 'Conta criada com sucesso!');
           loadDashboard(username);
-        })
-        .catch(err => {
-          alert('Erro ao salvar: ' + err.message);
         });
     });
 }
