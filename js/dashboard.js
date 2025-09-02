@@ -1,6 +1,6 @@
 /**
  * dashboard.js - NeoBank OS
- * Tela principal completa com Jogos, Investimentos, Resgate por Código e OSD
+ * Tela principal com modo claro/escuro, botão flutuante, Firebase e OSD
  */
 
 let currentUser = null;
@@ -11,20 +11,24 @@ let currentUser = null;
 function loadDashboard(username) {
   currentUser = username;
 
+  // Referência ao usuário no Firebase
   const userRef = db.ref('users/' + username);
+
+  // Escuta mudanças em tempo real
   userRef.on('value', (snapshot) => {
     const user = snapshot.val();
 
+    // Verifica se o usuário existe
     if (!user) {
       showToast('Usuário não encontrado.');
       showLoginScreen();
       return;
     }
 
-    // Atualiza nível com base no XP
+    // Atualiza nível
     user.level = Math.floor((user.xp || 0) / 100) + 1;
 
-    // Renderiza a interface
+    // Renderiza o dashboard
     renderDashboard(user, username);
   }, (error) => {
     console.error('Erro ao carregar dados do usuário:', error);
@@ -39,24 +43,22 @@ function renderDashboard(user, username) {
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Transações recentes
+  // Gera lista de transações recentes
   const transactions = Object.values(user.transactions || {}).slice(-5).reverse();
   const transactionItems = transactions.length ? transactions.map(t => {
     const icons = {
       deposit: 'plus-circle text-green-500',
       withdraw: 'minus-circle text-red-500',
       pix_in: 'qr-code text-blue-500',
-      pix_out: 'qr-code text-orange-500',
-      investment_gain: 'trending-up text-purple-500'
+      pix_out: 'qr-code text-orange-500'
     }[t.type] || 'circle';
 
     const label = {
       deposit: `+${t.amount} OSD`,
       withdraw: `-${t.amount} OSD`,
       pix_in: `+${t.amount} (Pix) ← ${t.target}`,
-      pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      investment_gain: `💰 +${t.amount.toFixed(2)} OSD de investimento`
-    }[t.type] || t.type;
+      pix_out: `-${t.amount} (Pix) → ${t.target}`
+    }[t.type] || 'Transação';
 
     return `
       <li class="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700">
@@ -80,7 +82,7 @@ function renderDashboard(user, username) {
         </div>
       </div>
       <div class="flex gap-2">
-        <button id="btnHelp" title="Ajuda"><i data-lucide="help-circle" class="w-5 h-5 text-primary"></i></button>
+        <button id="btnHelp" title="Ajuda"><i data-lucide="help-circle" class="w-5 h-5"></i></button>
         <button id="btnLogout" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>
       </div>
     </header>
@@ -113,14 +115,6 @@ function renderDashboard(user, username) {
         </button>
       </div>
 
-      <!-- Jogos e Resgate -->
-      <div class="card">
-        <h3 class="font-semibold mb-3">Ganhe OSD Jogando 🎮</h3>
-        <p class="text-sm text-muted mb-3">Jogue, ganhe OSD e resgate com código</p>
-        <button onclick="showGamesScreen()" class="btn btn-primary w-full mb-2">Jogar e Ganhar OSD</button>
-        <button onclick="showRedemptionModal('${username}')" class="btn btn-secondary w-full">Resgatar Código</button>
-      </div>
-
       <!-- Histórico -->
       <div class="card">
         <div class="flex justify-between items-center mb-3">
@@ -145,29 +139,29 @@ function renderDashboard(user, username) {
 
   // Eventos
   document.getElementById('btnLogout').onclick = () => {
-    db.ref('users/' + currentUser).off();
+    db.ref('users/' + currentUser).off(); // Para escuta
     localStorage.removeItem('currentUser');
     showToast('Até logo!');
     setTimeout(showLoginScreen, 500);
   };
 
   document.getElementById('btnHelp').onclick = () => {
-    alert('NeoBank OS\n\nApp de simulação bancária com jogos e investimentos.\n\nApenas para fins educativos.');
+    alert('NeoBank OS\n\nApp bancário fictício com jogos, investimentos e recompensas em OSD.');
   };
 
   // Botão flutuante de tema
   const themeToggle = document.getElementById('theme-toggle');
-  themeToggle.onclick = () => {
-    document.documentElement.classList.toggle('dark');
-    const icon = themeToggle.querySelector('i');
-    icon.setAttribute('data-lucide', document.documentElement.classList.contains('dark') ? 'moon' : 'sun');
-    lucide.createIcons();
-  };
+  if (themeToggle) {
+    themeToggle.onclick = () => {
+      document.documentElement.classList.toggle('dark');
+      const icon = themeToggle.querySelector('i');
+      icon.setAttribute('data-lucide', document.documentElement.classList.contains('dark') ? 'moon' : 'sun');
+      lucide.createIcons();
+    };
+  }
 
+  // Inicializa o ícone inicial
   lucide.createIcons();
-
-  // Renderiza transações
-  renderTransactions(user.transactions || []);
 }
 
 /**
@@ -183,16 +177,14 @@ function renderTransactions(transactions) {
       deposit: 'plus-circle text-green-500',
       withdraw: 'minus-circle text-red-500',
       pix_in: 'qr-code text-blue-500',
-      pix_out: 'qr-code text-orange-500',
-      investment_gain: 'trending-up text-purple-500'
+      pix_out: 'qr-code text-orange-500'
     }[t.type] || 'circle';
 
     const label = {
       deposit: `+${t.amount} OSD`,
       withdraw: `-${t.amount} OSD`,
       pix_in: `+${t.amount} (Pix) ← ${t.target}`,
-      pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      investment_gain: `💰 +${t.amount.toFixed(2)} OSD`
+      pix_out: `-${t.amount} (Pix) → ${t.target}`
     }[t.type] || 'Transação';
 
     return `
@@ -207,101 +199,6 @@ function renderTransactions(transactions) {
   }).join('') : '<li class="text-muted text-center py-2">Nenhuma transação</li>';
 
   setTimeout(() => lucide.createIcons(), 100);
-}
-
-/**
- * Mostra modal para resgatar código
- */
-function showRedemptionModal(username) {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="container">
-      <div class="card">
-        <h3 class="text-xl font-bold mb-4">Resgatar Código de Jogo</h3>
-        <p class="text-sm text-muted mb-4">Digite o código gerado nos jogos para adicionar OSD à sua conta.</p>
-        <div class="input-group">
-          <label>Código de Resgate</label>
-          <input type="text" id="redeemCode" placeholder="OSD-ALICE-123456789" class="w-full p-3 rounded-xl border" />
-        </div>
-        <button onclick="redeemCode('${username}')" class="btn btn-primary w-full mt-3">Resgatar</button>
-        <button onclick="loadDashboard('${username}')" class="btn btn-ghost w-full mt-2">Voltar</button>
-      </div>
-    </div>
-  `;
-  setTimeout(() => lucide.createIcons(), 100);
-}
-
-/**
- * Resgata um código de jogo
- */
-function redeemCode(username) {
-  const codeInput = document.getElementById('redeemCode');
-  const code = codeInput ? codeInput.value.trim() : '';
-
-  if (!code) {
-    alert('Digite um código.');
-    return;
-  }
-
-  db.ref('redemption_codes/' + code).once('value')
-    .then(snapshot => {
-      const data = snapshot.val();
-      if (!data) {
-        alert('Código inválido.');
-        return;
-      }
-      if (data.used) {
-        alert('Código já usado.');
-        return;
-      }
-      if (data.username !== username) {
-        alert('Este código não pertence a você.');
-        return;
-      }
-
-      // Atualiza saldo
-      updateUserBalance(username, data.amount);
-      addTransaction(username, 'deposit', data.amount, 'Código de Jogo');
-
-      // Marca como usado
-      db.ref('redemption_codes/' + code).update({ used: true });
-
-      showToast(`+${data.amount} OSD resgatados!`);
-      setTimeout(() => loadDashboard(username), 1000);
-    })
-    .catch(err => {
-      alert('Erro: ' + err.message);
-    });
-}
-
-/**
- * Atualiza o saldo do usuário
- */
-function updateUserBalance(username, amount) {
-  const ref = db.ref('users/' + username);
-  ref.transaction(user => {
-    if (user) {
-      user.balance += amount;
-      user.xp = (user.xp || 0) + amount * 0.1;
-      user.level = Math.floor(user.xp / 100) + 1;
-    }
-    return user;
-  });
-}
-
-/**
- * Adiciona transação
- */
-function addTransaction(username, type, amount, target = null) {
-  const transaction = {
-    id: Date.now(),
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().split(' ')[0],
-    type,
-    amount,
-    target
-  };
-  db.ref('users/' + username + '/transactions').push(transaction);
 }
 
 /**
