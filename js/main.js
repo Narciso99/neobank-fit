@@ -43,16 +43,15 @@ function showToast(msg) {
     toast.className = 'toast show';
     if (msg.includes('✅')) toast.className += ' toast--success';
     else if (msg.includes('❌') || msg.includes('Erro')) toast.className += ' toast--danger';
-    else if (msg.includes('ℹ️')) toast.className += ' toast--info';
+    else if (msg.includes('ℹ️') || msg.includes('🎮')) toast.className += ' toast--info';
     setTimeout(() => toast.classList.remove('show'), 3000);
   } else {
     console.error('Elemento de toast não encontrado.');
   }
 
-  // Show browser notification if permission granted
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('NeoBank OS', {
-      body: msg.replace(/✅|❌|ℹ️|🎮/g, ''), // Remove emojis for cleaner notification
+      body: msg.replace(/✅|❌|ℹ️|🎮/g, ''),
       icon: 'https://api.dicebear.com/9.x/thumbs/svg?seed=neobank',
     });
   }
@@ -138,17 +137,6 @@ function showRegisterScreen() {
   console.log('Tela de registro carregada.');
 }
 
-// Simple client-side hashing (for demo purposes; use Firebase Authentication in production)
-function hashPassword(password) {
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return hash.toString();
-}
-
 function login() {
   const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
@@ -162,40 +150,14 @@ function login() {
   const username = usernameInput.value.trim();
   const password = passwordInput.value.trim();
 
-  if (!username || !password) {
-    error.textContent = 'Preencha usuário e senha.';
-    error.classList.remove('hidden');
-    showToast('❌ Preencha usuário e senha.');
-    return;
-  }
-
-  error.classList.add('hidden');
-
-  db.ref('users/' + username).once('value')
-    .then(snapshot => {
-      const userData = snapshot.val();
-      if (userData) {
-        if (userData.password === hashPassword(password)) {
-          localStorage.setItem('currentUser', username);
-          showToast(`✅ Bem-vindo, ${username}!`);
-          loadDashboard(username);
-        } else {
-          error.textContent = 'Senha incorreta.';
-          error.classList.remove('hidden');
-          showToast('❌ Senha incorreta.');
-        }
-      } else {
-        error.textContent = 'Usuário não encontrado. Crie uma conta.';
-        error.classList.remove('hidden');
-        showToast('❌ Usuário não encontrado. Crie uma conta.');
-      }
-    })
-    .catch(err => {
-      console.error('Erro ao verificar usuário:', err);
-      error.textContent = 'Erro ao verificar usuário.';
+  loginUser(username, password, (success) => {
+    if (success) {
+      loadDashboard(username);
+    } else {
+      error.textContent = 'Usuário ou senha incorretos.';
       error.classList.remove('hidden');
-      showToast('❌ Erro ao verificar usuário: ' + err.message);
-    });
+    }
+  });
 }
 
 function register() {
@@ -213,13 +175,6 @@ function register() {
   const password = passwordInput.value.trim();
   const confirmPassword = confirmPasswordInput.value.trim();
 
-  if (!username || !password || !confirmPassword) {
-    error.textContent = 'Preencha todos os campos.';
-    error.classList.remove('hidden');
-    showToast('❌ Preencha todos os campos.');
-    return;
-  }
-
   if (password !== confirmPassword) {
     error.textContent = 'As senhas não coincidem.';
     error.classList.remove('hidden');
@@ -227,54 +182,17 @@ function register() {
     return;
   }
 
-  db.ref('users/' + username).once('value')
-    .then(snapshot => {
-      if (snapshot.exists()) {
-        error.textContent = 'Usuário já existe.';
-        error.classList.remove('hidden');
-        showToast('❌ Usuário já existe.');
-      } else {
-        const hashedPassword = hashPassword(password);
-        db.ref('users/' + username).set({
-          username,
-          password: hashedPassword,
-          balance: 1000,
-          xp: 0,
-          level: 1,
-          avatar: 'https://api.dicebear.com/9.x/thumbs/svg?seed=' + username,
-          transactions: {},
-          investments: {}
-        }).then(() => {
-          localStorage.setItem('currentUser', username);
-          showToast(`✅ Conta criada para ${username}!`);
-          loadDashboard(username);
-        }).catch(err => {
-          console.error('Erro ao criar conta:', err);
-          error.textContent = 'Erro ao criar conta.';
-          error.classList.remove('hidden');
-          showToast('❌ Erro ao criar conta: ' + err.message);
-        });
-      }
-    })
-    .catch(err => {
-      console.error('Erro ao verificar usuário:', err);
-      error.textContent = 'Erro ao verificar usuário.';
+  registerUser(username, password, (success) => {
+    if (success) {
+      loadDashboard(username);
+    } else {
+      error.textContent = 'Erro ao criar conta.';
       error.classList.remove('hidden');
-      showToast('❌ Erro ao verificar usuário: ' + err.message);
-    });
-}
-
-function getCurrentUser() {
-  const username = localStorage.getItem('currentUser');
-  if (!username) {
-    showLoginScreen();
-    return null;
-  }
-  return { username };
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Apply saved theme
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
   if (savedTheme === 'dark') {
@@ -283,14 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.classList.remove('dark');
   }
 
-  // Request notification permission
   requestNotificationPermission();
-
-  // Initialize essential elements
   createThemeToggle();
   createToastElement();
 
-  // Load dashboard or login screen
   const user = localStorage.getItem('currentUser');
   if (user) {
     db.ref('users/' + user).once('value')
@@ -314,6 +228,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoginScreen();
   }
 
-  // Initialize icons
   setTimeout(() => lucide.createIcons(), 200);
 });
