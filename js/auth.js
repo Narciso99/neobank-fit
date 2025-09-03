@@ -25,8 +25,7 @@ function signup() {
   const password = document.getElementById('signup-password').value;
   const email = `${username}@neobank.com`;
 
-  // Validação de entrada
-  if (!username || username.length < 3)And {
+  if (!username || username.length < 3) {
     showToast('O usuário deve ter pelo menos 3 caracteres!');
     console.error('Erro: Username inválido', username);
     return;
@@ -37,15 +36,12 @@ function signup() {
     return;
   }
 
-  // Verificar inicialização do Firebase
   if (!firebase.auth()) {
     showToast('Erro: Firebase Authentication não inicializado!');
     console.error('Firebase Auth não está disponível');
     return;
   }
 
-  // Verificar se o username já existe
-  console.log('Verificando unicidade do username:', username);
   firebase.database().ref('users').orderByChild('username').equalTo(username).once('value')
     .then(snapshot => {
       if (snapshot.exists()) {
@@ -54,18 +50,13 @@ function signup() {
         return;
       }
 
-      // Gerar IBAN único
       const iban = `OSPT${Math.random().toString().slice(2, 18)}`;
       console.log('IBAN gerado:', iban);
 
-      // Criar usuário no Firebase Authentication
-      console.log('Criando usuário com email:', email);
       firebase.auth().createUserWithEmailAndPassword(email, password)
         .then(userCredential => {
           const user = userCredential.user;
           console.log('Usuário criado com UID:', user.uid);
-
-          // Salvar dados no Realtime Database
           return firebase.database().ref('users/' + user.uid).set({
             username,
             email,
