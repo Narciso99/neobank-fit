@@ -1,64 +1,146 @@
-body {
-  font-family: 'Inter', sans-serif;
+/* Reset and Base Styles */
+* {
   margin: 0;
   padding: 0;
-  background: #f4f4f4;
-  color: #333;
-  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  color: #1a1a1a;
+  transition: background 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
 }
 
 body.dark-mode {
-  background: #1a1a1a;
-  color: #fff;
+  background: #121212;
+  color: #e0e0e0;
 }
 
+/* Container */
 .container {
   max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
+/* Typography */
+h1, h2, h3 {
+  font-family: 'Poppins', sans-serif;
+  color: #00C853;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.8rem;
+}
+
+h3 {
+  font-size: 1.4rem;
+}
+
+/* Header */
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 15px;
+  background: #003366;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-h1, h2, h3 {
-  font-family: 'Poppins', sans-serif;
-  color: #00C853;
+header button {
+  background: #00C853;
+  padding: 8px 16px;
+  font-size: 1rem;
 }
 
+/* Buttons */
 button {
   background: #00C853;
   color: #fff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s, background 0.3s;
+  transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 button:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
   background: #009f3d;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+button:active {
+  transform: translateY(0);
+}
+
+/* Inputs */
 input {
-  padding: 10px;
+  padding: 12px;
   margin: 10px 0;
   border: 1px solid #003366;
-  border-radius: 8px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
   width: 100%;
-  box-sizing: border-box;
+  background: #fff;
+  transition: border-color 0.3s ease;
 }
 
+input:focus {
+  outline: none;
+  border-color: #00C853;
+  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.2);
+}
+
+body.dark-mode input {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+/* Card Design */
 .card-design {
-  background: linear-gradient(45deg, #003366, #00C853);
+  background: linear-gradient(135deg, #003366, #00C853);
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 16px;
   color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 10px 0;
+  transition: transform 0.3s ease;
+}
+
+.card-design:hover {
+  transform: scale(1.02);
+}
+
+/* Transactions */
+.transactions {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .transactions {
+  background: #1e1e1e;
 }
 
 .transactions ul {
@@ -68,24 +150,54 @@ input {
 
 .transactions li {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background 0.2s ease;
 }
 
+body.dark-mode .transactions li {
+  border-bottom: 1px solid #444;
+}
+
+.transactions li:hover {
+  background: #f0f0f0;
+}
+
+body.dark-mode .transactions li:hover {
+  background: #2a2a2a;
+}
+
+/* Actions */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+
+/* Floating Action Button (FAB) */
 .fab {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 30px;
+  right: 30px;
   background: #003366;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  font-size: 1.5rem;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, background 0.3s ease;
 }
 
+.fab:hover {
+  transform: rotate(90deg);
+  background: #004080;
+}
+
+/* Toast Notification */
 .toast {
   position: fixed;
   bottom: 20px;
@@ -93,18 +205,61 @@ input {
   transform: translateX(-50%);
   background: #003366;
   color: #fff;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
   display: none;
-  animation: slideIn 0.5s ease;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.5s ease forwards;
 }
 
 @keyframes slideIn {
-  from { transform: translateX(-50%) translateY(100px); }
-  to { transform: translateX(-50%) translateY(0); }
+  from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
-@media (max-width: 600px) {
-  .container { padding: 10px; }
-  button { width: 100%; margin: 5px 0; }
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  button {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .fab {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  input, button {
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+
+  .card-design {
+    padding: 15px;
+  }
 }
