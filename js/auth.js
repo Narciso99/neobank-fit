@@ -1,3 +1,4 @@
+// js/auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -88,8 +89,6 @@ function handleRegister(e) {
       }
 
       const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
-      const email = `${username}@neobank.com`;
-
       const newUser = {
         username,
         password,
@@ -101,7 +100,6 @@ function handleRegister(e) {
         xp: 0,
         level: 1,
         iban: iban,
-        email: email,
         transactions: [],
         investments: [],
         achievements: [],
