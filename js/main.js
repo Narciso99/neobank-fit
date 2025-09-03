@@ -105,7 +105,6 @@ function login() {
     });
 }
 
-// Função placeholder para getCurrentUser (usada em outros scripts)
 function getCurrentUser() {
   const username = localStorage.getItem('currentUser');
   if (!username) {
