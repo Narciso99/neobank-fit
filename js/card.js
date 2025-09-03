@@ -1,3 +1,4 @@
+// card.js
 function showCardScreen() {
   const user = getCurrentUser();
   const last4 = user.username.slice(-4).toUpperCase().padStart(4, 'X');
@@ -22,7 +23,7 @@ function showCardScreen() {
         </div>
       </div>
       <div class="card">
-        <h3 class="font-semibold">Limite Disponível</h3>
+        <h3>Limite Disponível</h3>
         <p class="text-primary text-xl mt-2">1.500,00 OSD</p>
       </div>
       <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost">Voltar</button>
