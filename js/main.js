@@ -1,4 +1,3 @@
-// main.js
 function createThemeToggle() {
   if (document.getElementById('theme-toggle')) return;
 
