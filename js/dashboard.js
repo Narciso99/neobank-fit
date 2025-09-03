@@ -1,6 +1,6 @@
 /**
  * dashboard.js - NeoBank OS
- * Dashboard ultra moderno, com efeitos, performance e elegância
+ * Dashboard completo com IBAN, Pix, transferência, saque, investimentos e jogos
  */
 
 let currentUser = null;
@@ -24,13 +24,16 @@ function loadDashboard(username) {
     // Atualiza nível
     user.level = Math.floor((user.xp || 0) / 100) + 1;
 
-    // Renderiza
+    // Renderiza o dashboard
     renderDashboard(user, username);
+  }, (error) => {
+    console.error('Erro ao carregar dados do usuário:', error);
+    showToast('Erro ao carregar dados.');
   });
 }
 
 /**
- * Renderiza a interface 8K
+ * Renderiza a interface completa do dashboard
  */
 function renderDashboard(user, username) {
   const app = document.getElementById('app');
@@ -113,18 +116,33 @@ function renderDashboard(user, username) {
           <i data-lucide="minus-circle" class="w-5 h-5 mx-auto mb-1"></i>
           <span class="text-sm">Sacar</span>
         </button>
-        <button onclick="showPixScreen()" class="btn btn-secondary py-4">
-          <i data-lucide="qr-code" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Pix</span>
-        </button>
         <button onclick="showTransactionModal('transfer')" class="btn btn-secondary py-4">
           <i data-lucide="arrow-up-right" class="w-5 h-5 mx-auto mb-1"></i>
           <span class="text-sm">Transferir</span>
+        </button>
+        <button onclick="showPixScreen()" class="btn btn-secondary py-4">
+          <i data-lucide="qr-code" class="w-5 h-5 mx-auto mb-1"></i>
+          <span class="text-sm">Pix</span>
         </button>
         <button onclick="showInvestmentsScreen()" class="btn btn-secondary py-4">
           <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-1"></i>
           <span class="text-sm">Investir</span>
         </button>
+      </div>
+
+      <!-- Dados Bancários -->
+      <div class="card">
+        <h3 class="font-semibold mb-2">Informações Bancárias</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-muted">IBAN:</span>
+            <span class="font-mono">${user.iban}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted">Chave Pix:</span>
+            <span>${user.username}@neobank.os</span>
+          </div>
+        </div>
       </div>
 
       <!-- Jogos -->
@@ -159,7 +177,7 @@ function renderDashboard(user, username) {
 
   // Eventos
   document.getElementById('btnLogout').onclick = () => {
-    db.ref('users/' + currentUser).off();
+    db.ref('users/' + currentUser).off(); // Para escuta
     localStorage.removeItem('currentUser');
     showToast('Até logo!');
     setTimeout(showLoginScreen, 500);
@@ -185,7 +203,7 @@ function renderDashboard(user, username) {
 }
 
 /**
- * Renderiza transações
+ * Renderiza a lista de transações
  */
 function renderTransactions(transactions) {
   const list = document.getElementById('transactionList');
