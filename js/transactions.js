@@ -56,11 +56,11 @@ function confirmWithdraw() {
 
 function confirmTransfer() {
   const user = getCurrentUser();
-  const iban = document.getElementById('iban').value.trim();
+  const iban = document.getElementById('iban').value.trim().toUpperCase();
   const amount = parseFloat(document.getElementById('amount').value);
 
   if (!iban.startsWith('OSPT') || iban.length !== 22) {
-    alert('IBAN inválido.');
+    alert('IBAN inválido. Deve começar com OSPT e ter 22 dígitos.');
     return;
   }
 
@@ -69,28 +69,42 @@ function confirmTransfer() {
     return;
   }
 
-  db.ref('users').orderByChild('iban').equalTo(iban).once('value')
+  // Correção: Busca todos os usuários e filtra pelo IBAN
+  db.ref('users').once('value')
     .then(snapshot => {
-      if (snapshot.exists()) {
-        snapshot.forEach(child => {
-          const target = child.key;
-          db.ref('users/' + user.username).once('value')
-            .then(userSnap => {
-              if (userSnap.val().balance < amount) {
-                alert('Saldo insuficiente.');
-                return;
-              }
+      let targetUser = null;
+      snapshot.forEach(child => {
+        const userData = child.val();
+        if (userData.iban === iban) {
+          targetUser = { key: child.key, ...userData };
+        }
+      });
 
-              updateUserBalance(user.username, -amount);
-              updateUserBalance(target, amount);
-              addTransaction(user.username, 'transfer_out', amount, target);
-              addTransaction(target, 'transfer_in', amount, user.username);
-              showToast(`${amount} OSD enviado para ${target}!`);
-              setTimeout(() => loadDashboard(user.username), 1000);
-            });
-        });
-      } else {
+      if (!targetUser) {
         alert('IBAN não encontrado.');
+        return;
       }
+
+      // Verifica saldo do remetente
+      db.ref('users/' + user.username).once('value')
+        .then(userSnap => {
+          const senderData = userSnap.val();
+          if (senderData.balance < amount) {
+            alert('Saldo insuficiente.');
+            return;
+          }
+
+          // Realiza a transferência
+          updateUserBalance(user.username, -amount);
+          updateUserBalance(targetUser.key, amount);
+          addTransaction(user.username, 'transfer_out', amount, targetUser.key);
+          addTransaction(targetUser.key, 'transfer_in', amount, user.username);
+          showToast(`${amount} OSD enviado para ${targetUser.key}!`);
+          setTimeout(() => loadDashboard(user.username), 1000);
+        });
+    })
+    .catch(err => {
+      console.error('Erro ao buscar IBAN:', err);
+      alert('Erro ao buscar IBAN.');
     });
 }
