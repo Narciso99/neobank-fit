@@ -1,6 +1,8 @@
 // pix.js
 function showPixScreen() {
   const user = getCurrentUser();
+  if (!user) return;
+
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="container">
@@ -8,15 +10,21 @@ function showPixScreen() {
         <h2>Pix - NeoBank OS</h2>
       </div>
       <div class="card">
-        <h3>Chave Pix</h3>
+        <h3>Sua Chave Pix</h3>
         <p class="text-primary mt-2">${user.username}@neobank.os</p>
         <button onclick="copyPixKey('${user.username}')" class="btn btn-secondary mt-3">Copiar Chave</button>
       </div>
       <div class="card">
         <h3>Enviar Pix</h3>
-        <input type="text" id="pixKey" placeholder="alice@neobank.os" class="w-full p-3 border rounded-xl my-2" />
-        <input type="number" id="pixAmount" placeholder="100" class="w-full p-3 border rounded-xl my-2" />
-        <button onclick="sendPix()" class="btn btn-primary">Enviar Pix</button>
+        <div class="input-group">
+          <label>Chave (usuário@neobank.os)</label>
+          <input type="text" id="pixKey" placeholder="alice@neobank.os" class="w-full p-3 rounded-xl border" />
+        </div>
+        <div class="input-group">
+          <label>Valor (OSD)</label>
+          <input type="number" id="pixAmount" placeholder="100" class="w-full p-3 rounded-xl border" />
+        </div>
+        <button onclick="sendPix()" class="btn btn-primary w-full mt-3">Enviar Pix</button>
       </div>
       <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost mt-4">Voltar</button>
     </div>
@@ -30,28 +38,54 @@ function copyPixKey(key) {
 }
 
 function sendPix() {
-  const key = document.getElementById('pixKey').value.trim().replace('@neobank.os', '');
-  const amount = parseFloat(document.getElementById('pixAmount').value);
-  const sender = getCurrentUser();
+  const user = getCurrentUser();
+  const keyInput = document.getElementById('pixKey');
+  const amountInput = document.getElementById('pixAmount');
 
-  db.ref('users/' + key).once('value').then(snap => {
-    if (!snap.exists()) {
-      alert('Usuário não encontrado.');
-      return;
-    }
+  if (!keyInput || !amountInput) return;
 
-    db.ref('users/' + sender.username).once('value').then(userSnap => {
-      if (userSnap.val().balance < amount) {
-        alert('Saldo insuficiente.');
+  const key = keyInput.value.trim().replace('@neobank.os', '').trim();
+  const amount = parseFloat(amountInput.value);
+
+  if (!key || !amount || amount <= 0) {
+    alert('Preencha todos os campos.');
+    return;
+  }
+
+  // Verifica se o destinatário existe
+  db.ref('users/' + key).once('value')
+    .then(snapshot => {
+      if (!snapshot.exists()) {
+        alert('Usuário não encontrado.');
         return;
       }
 
-      updateUserBalance(sender.username, -amount);
-      updateUserBalance(key, amount);
-      addTransaction(sender.username, 'pix_out', amount, key);
-      addTransaction(key, 'pix_in', amount, sender.username);
-      showToast(`${amount} OSD enviado via Pix!`);
-      setTimeout(() => loadDashboard(sender.username), 1500);
+      // Verifica saldo do remetente
+      return db.ref('users/' + user.username).once('value')
+        .then(userSnap => {
+          const userData = userSnap.val();
+          if (userData.balance < amount) {
+            alert('Saldo insuficiente.');
+            return;
+          }
+
+          // Atualiza saldo do remetente
+          updateUserBalance(user.username, -amount);
+
+          // Atualiza saldo do destinatário
+          updateUserBalance(key, amount);
+
+          // Adiciona transações
+          addTransaction(user.username, 'pix_out', amount, key);
+          addTransaction(key, 'pix_in', amount, user.username);
+
+          // Notificação
+          showToast(`${amount} OSD enviado via Pix para ${key}!`);
+          setTimeout(() => loadDashboard(user.username), 1500);
+        });
+    })
+    .catch(err => {
+      console.error('Erro ao enviar Pix:', err);
+      alert('Erro ao enviar Pix. Tente novamente.');
     });
-  });
 }
