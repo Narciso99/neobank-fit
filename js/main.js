@@ -9,10 +9,11 @@ function createThemeToggle() {
   const toggle = document.createElement('button');
   toggle.id = 'theme-toggle';
   toggle.innerHTML = '<i data-lucide="sun" class="w-6 h-6"></i>';
-  toggle.className = 'fixed bottom-8 right-8 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform';
+  toggle.className = 'fixed bottom-8 right-8 w-14 h-14 rounded-full btn btn--primary flex-center shadow-lg';
   
   toggle.onclick = () => {
     const isDark = document.documentElement.classList.toggle('dark');
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     const icon = toggle.querySelector('i');
     icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -38,7 +39,9 @@ function showToast(msg) {
   const toast = document.getElementById('toast');
   if (toast) {
     toast.textContent = msg;
-    toast.classList.add('show');
+    toast.className = 'toast show';
+    if (msg.includes('✅')) toast.className += ' toast--success';
+    else if (msg.includes('❌')) toast.className += ' toast--danger';
     setTimeout(() => toast.classList.remove('show'), 3000);
   } else {
     console.error('Toast element not found.');
@@ -77,21 +80,22 @@ function showLoginScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="card">
-        <h2 class="text-2xl font-bold mb-4 text-center">Bem-vindo ao NeoBank OS</h2>
+        <h2 class="text-center">Bem-vindo ao NeoBank OS</h2>
         <div class="input-group">
-          <label for="username">Usuário</label>
-          <input type="text" id="username" placeholder="Digite seu usuário" class="w-full" />
+          <label for="username" class="field__label">Usuário</label>
+          <input type="text" id="username" placeholder="Digite seu usuário" class="input w-full" />
         </div>
         <div class="input-group">
-          <label for="password">Senha</label>
-          <input type="password" id="password" placeholder="Digite sua senha" class="w-full" />
+          <label for="password" class="field__label">Senha</label>
+          <input type="password" id="password" placeholder="Digite sua senha" class="input w-full" />
         </div>
-        <button onclick="login()" class="btn btn-primary w-full mt-4">Entrar</button>
-        <button onclick="showRegisterScreen()" class="btn btn-ghost w-full mt-2">Criar Conta</button>
+        <button onclick="login()" class="btn btn--primary w-full mt-4">Entrar</button>
+        <button onclick="showRegisterScreen()" class="btn btn--ghost w-full mt-2">Criar Conta</button>
       </div>
     </div>
   `;
   setTimeout(() => lucide.createIcons(), 100);
+  console.log('Tela de login carregada.');
 }
 
 function showRegisterScreen() {
@@ -104,25 +108,26 @@ function showRegisterScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="card">
-        <h2 class="text-2xl font-bold mb-4 text-center">Criar Conta - NeoBank OS</h2>
+        <h2 class="text-center">Criar Conta - NeoBank OS</h2>
         <div class="input-group">
-          <label for="username">Usuário</label>
-          <input type="text" id="username" placeholder="Digite seu usuário" class="w-full" />
+          <label for="username" class="field__label">Usuário</label>
+          <input type="text" id="username" placeholder="Digite seu usuário" class="input w-full" />
         </div>
         <div class="input-group">
-          <label for="password">Senha</label>
-          <input type="password" id="password" placeholder="Digite sua senha" class="w-full" />
+          <label for="password" class="field__label">Senha</label>
+          <input type="password" id="password" placeholder="Digite sua senha" class="input w-full" />
         </div>
         <div class="input-group">
-          <label for="confirm-password">Confirmar Senha</label>
-          <input type="password" id="confirm-password" placeholder="Confirme sua senha" class="w-full" />
+          <label for="confirm-password" class="field__label">Confirmar Senha</label>
+          <input type="password" id="confirm-password" placeholder="Confirme sua senha" class="input w-full" />
         </div>
-        <button onclick="register()" class="btn btn-primary w-full mt-4">Criar Conta</button>
-        <button onclick="showLoginScreen()" class="btn btn-ghost w-full mt-2">Voltar</button>
+        <button onclick="register()" class="btn btn--primary w-full mt-4">Criar Conta</button>
+        <button onclick="showLoginScreen()" class="btn btn--ghost w-full mt-2">Voltar</button>
       </div>
     </div>
   `;
   setTimeout(() => lucide.createIcons(), 100);
+  console.log('Tela de registro carregada.');
 }
 
 // Simple client-side hashing (for demo purposes; use Firebase Authentication in production)
@@ -163,8 +168,8 @@ function login() {
       }
     })
     .catch(err => {
-      showToast('❌ Erro ao verificar usuário: ' + err.message);
       console.error('Erro ao verificar usuário:', err);
+      showToast('❌ Erro ao verificar usuário: ' + err.message);
     });
 }
 
@@ -206,14 +211,14 @@ function register() {
           showToast(`✅ Conta criada para ${username}!`);
           loadDashboard(username);
         }).catch(err => {
-          showToast('❌ Erro ao criar conta: ' + err.message);
           console.error('Erro ao criar conta:', err);
+          showToast('❌ Erro ao criar conta: ' + err.message);
         });
       }
     })
     .catch(err => {
-      showToast('❌ Erro ao verificar usuário: ' + err.message);
       console.error('Erro ao verificar usuário:', err);
+      showToast('❌ Erro ao verificar usuário: ' + err.message);
     });
 }
 
@@ -228,7 +233,8 @@ function getCurrentUser() {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Apply saved theme
-  const savedTheme = localStorage.getItem('theme');
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
   if (savedTheme === 'dark') {
     document.documentElement.classList.add('dark');
   } else {
@@ -238,31 +244,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // Request notification permission
   requestNotificationPermission();
 
-  // Inicializa elementos essenciais
+  // Initialize essential elements
   createThemeToggle();
   createToastElement();
 
-  // Carrega o dashboard ou tela de login
+  // Load dashboard or login screen
   const user = localStorage.getItem('currentUser');
   if (user) {
     db.ref('users/' + user).once('value')
       .then(snapshot => {
         if (snapshot.exists()) {
+          console.log('Usuário encontrado, carregando dashboard:', user);
           loadDashboard(user);
         } else {
+          console.error('Usuário não encontrado no Firebase:', user);
           localStorage.removeItem('currentUser');
+          showToast('❌ Sessão inválida. Faça login novamente.');
           showLoginScreen();
         }
       })
       .catch(err => {
-        showToast('❌ Erro ao verificar sessão: ' + err.message);
         console.error('Erro ao verificar sessão:', err);
+        showToast('❌ Erro ao verificar sessão: ' + err.message);
         showLoginScreen();
       });
   } else {
     showLoginScreen();
   }
 
-  // Inicializa ícones
+  // Initialize icons
   setTimeout(() => lucide.createIcons(), 200);
 });
