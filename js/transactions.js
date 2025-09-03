@@ -5,7 +5,7 @@ function loadTransactions(uid, limit = 5) {
     snapshot.forEach(child => {
       const { type, amount, date } = child.val();
       const li = document.createElement('li');
-      li.innerHTML = `<span style="color: ${type === 'deposit' ? '#00C853' : type === 'withdraw' ? 'red' : type === 'pix' ? '#003366' : 'purple'}">${type} - ${amount} OSD - ${new Date(date).toLocaleString()}</span>`;
+      li.innerHTML = `<span style="color: ${type === 'deposit' ? '#00C853' : type === 'withdraw' ? 'red' : type === 'pix' ? '#005BEA' : 'purple'}">${type} - ${amount} OSD - ${new Date(date).toLocaleString()}</span>`;
       transactionList.appendChild(li);
     });
   });
@@ -20,7 +20,7 @@ function showAllTransactions() {
     snapshot.forEach(child => {
       const { type, amount, date } = child.val();
       const li = document.createElement('li');
-      li.innerHTML = `<span style="color: ${type === 'deposit' ? '#00C853' : type === 'withdraw' ? 'red' : type === 'pix' ? '#003366' : 'purple'}">${type} - ${amount} OSD - ${new Date(date).toLocaleString()}</span>`;
+      li.innerHTML = `<span style="color: ${type === 'deposit' ? '#00C853' : type === 'withdraw' ? 'red' : type === 'pix' ? '#005BEA' : 'purple'}">${type} - ${amount} OSD - ${new Date(date).toLocaleString()}</span>`;
       allTransactionList.appendChild(li);
     });
   });
