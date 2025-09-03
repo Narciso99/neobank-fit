@@ -1,88 +1,70 @@
+// investments.js - Sistema de investimentos realista
+const investmentOptions = [
+  { name: "Fundos de Tecnologia", risk: "Alto", return: "12-18%" },
+  { name: "Títulos do Tesouro", risk: "Baixo", return: "5-7%" },
+  { name: "Ações Internacionais", risk: "Alto", return: "10-15%" },
+  { name: "Criptomoedas", risk: "Muito Alto", return: "20-100%" },
+  { name: "Fundos Imobiliários", risk: "Médio", return: "8-12%" },
+  { name: "Startups", risk: "Muito Alto", return: "30-200%" },
+  { name: "Ouro", risk: "Baixo", return: "3-6%" },
+  { name: "Energia Solar", risk: "Médio", return: "9-14%" },
+  { name: "Agricultura", risk: "Médio", return: "7-10%" },
+  { name: "Educação", risk: "Baixo", return: "6-9%" },
+  { name: "Saúde", risk: "Médio", return: "8-13%" },
+  { name: "Logística", risk: "Médio", return: "7-11%" },
+  { name: "Turismo", risk: "Alto", return: "10-18%" },
+  { name: "IA e Machine Learning", risk: "Alto", return: "15-25%" },
+  { name: "Espaço e Satélites", risk: "Muito Alto", return: "20-50%" },
+  { name: "Blockchain", risk: "Alto", return: "12-20%" },
+  { name: "Sustentabilidade", risk: "Médio", return: "8-12%" },
+  { name: "Fintechs", risk: "Alto", return: "10-16%" }
+];
+
 function showInvestmentsScreen() {
-  console.log('Exibindo tela de investimentos');
   const user = getCurrentUser();
-  if (!user) {
-    showToast('Você precisa estar logado.');
-    console.error('Erro: Usuário não logado');
-    showLoginScreen();
-    return;
-  }
   const app = document.getElementById('app');
-  if (!app) {
-    console.error('Elemento #app não encontrado');
-    return;
-  }
   app.innerHTML = `
     <div class="container">
       <div class="header">
-        <h2>Investimentos</h2>
+        <h2>Investimentos 📈</h2>
       </div>
-      <div class="card">
-        <h3 class="font-semibold">Escolha uma Opção</h3>
-        <select id="investment-option" class="w-full p-3 rounded-xl border mb-4">
-          <option value="tech">Fundos de Tecnologia (Risco: Médio, Retorno: 8%)</option>
-          <option value="crypto">Criptomoedas (Risco: Alto, Retorno: 15%)</option>
-          <option value="gold">Ouro (Risco: Baixo, Retorno: 3%)</option>
-        </select>
-        <div class="input-group">
-          <label>Valor (FIT$)</label>
-          <input type="number" id="investment-amount" placeholder="100" class="w-full p-3 rounded-xl border" />
+      ${investmentOptions.map((inv, i) => `
+        <div class="card">
+          <h3>${inv.name}</h3>
+          <p><strong>Risco:</strong> ${inv.risk}</p>
+          <p><strong>Retorno:</strong> ${inv.return} ao ano</p>
+          <div class="flex gap-2 mt-2">
+            <input type="number" id="invest${i}" placeholder="100" class="flex-1 p-2 border rounded-lg" />
+            <button onclick="investIn(${i})" class="btn btn-primary py-2 px-4">Investir</button>
+          </div>
         </div>
-        <button onclick="invest()" class="btn btn-primary w-full">Investir</button>
-      </div>
-      <button onclick="loadDashboard('${user.uid}')" class="btn btn-ghost mt-4">Voltar</button>
+      `).join('')}
+      <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost mt-4">Voltar</button>
     </div>
   `;
   setTimeout(() => lucide.createIcons(), 100);
 }
 
-function invest() {
-  console.log('Iniciando investimento');
+function investIn(index) {
   const user = getCurrentUser();
-  if (!user) {
-    showToast('Você precisa estar logado.');
-    console.error('Erro: Usuário não logado');
-    return;
-  }
-  const amount = parseFloat(document.getElementById('investment-amount').value);
-  const option = document.getElementById('investment-option').value;
-  if (!amount || amount <= 0) {
-    showToast('Informe um valor válido.');
-    console.error('Erro: Valor inválido', amount);
-    return;
-  }
-  firebase.database().ref('users/' + user.uid).once('value')
-    .then(snapshot => {
-      const userData = snapshot.val();
-      if (!userData || userData.balance < amount) {
-        showToast('Saldo insuficiente.');
-        console.error('Erro: Saldo insuficiente', userData.balance, amount);
+  const amount = parseFloat(document.getElementById(`invest${index}`).value) || 100;
+
+  db.ref('users/' + user.username).once('value')
+    .then(snap => {
+      const userData = snap.val();
+      if (userData.balance < amount) {
+        alert('Saldo insuficiente.');
         return;
       }
-      const returns = { tech: 0.08, crypto: 0.15, gold: 0.03 };
-      const returnAmount = amount * returns[option];
+
+      updateUserBalance(user.username, -amount);
+      const gain = amount * (Math.random() * 0.15 + 0.05);
       setTimeout(() => {
-        const updates = {};
-        updates['users/' + user.uid + '/balance'] = userData.balance - amount + returnAmount;
-        updates['users/' + user.uid + '/xp'] = (userData.xp || 0) + amount * 0.1;
-        updates['users/' + user.uid + '/transactions/investment_' + Date.now()] = {
-          id: 'investment_' + Date.now(),
-          type: 'investment',
-          amount: returnAmount,
-          date: new Date().toISOString().split('T')[0],
-          time: new Date().toTimeString().split(' ')[0]
-        };
-        firebase.database().ref().update(updates)
-          .then(() => {
-            addAchievement(user.uid, 'Investimento Realizado', `Ganhou ${returnAmount.toFixed(2)} FIT$ em ${option}.`);
-            showToast(`Investimento concluído! Ganho: ${returnAmount.toFixed(2)} FIT$`);
-            console.log('Investimento concluído:', option, amount, 'Ganho:', returnAmount);
-            setTimeout(() => loadDashboard(user.uid), 1500);
-          });
+        updateUserBalance(user.username, gain);
+        addTransaction(user.username, 'investment_gain', gain, investmentOptions[index].name);
+        showToast(`💰 +${gain.toFixed(2)} OSD de retorno!`);
       }, 3000);
-    })
-    .catch(err => {
-      showToast('Erro ao investir: ' + err.message);
-      console.error('Erro ao investir:', err.message);
+
+      showToast(`Investido ${amount} OSD em ${investmentOptions[index].name}`);
     });
 }
