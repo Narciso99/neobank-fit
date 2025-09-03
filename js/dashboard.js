@@ -1,3 +1,4 @@
+// dashboard.js
 let currentUser = null;
 
 function loadDashboard(username) {
