@@ -1,82 +1,125 @@
-/**
- * auth.js - NeoBank OS
- * Gerencia autenticação de usuários
- */
-
-function hashPassword(password) {
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString();
+function showLoginScreen() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.innerHTML = `
+    <div class="container">
+      <div class="text-center mb-8">
+        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank OS</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD!</p>
+      </div>
+      <div class="flex justify-center mb-6">
+        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
+      </div>
+      <div class="card">
+        <form id="loginForm" class="space-y-4">
+          <div class="input-group">
+            <label>Usuário</label>
+            <input type="text" name="username" required class="w-full p-3 rounded-xl border" />
+          </div>
+          <div class="input-group">
+            <label>Senha</label>
+            <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
+          </div>
+          <button type="submit" class="btn btn-primary">Entrar</button>
+          <button type="button" id="btnRegister" class="btn btn-secondary mt-2">Criar Conta</button>
+        </form>
+      </div>
+    </div>
+  `;
+  document.getElementById('loginForm').onsubmit = handleLogin;
+  document.getElementById('btnRegister').onclick = showRegisterScreen;
+  setTimeout(() => lucide.createIcons(), 100);
 }
 
-function loginUser(username, password, callback) {
-  if (!username || !password) {
-    showToast('❌ Preencha usuário e senha.');
-    callback(false);
-    return;
-  }
+function showRegisterScreen() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.innerHTML = `
+    <div class="container">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Criar Conta</h1>
+      </div>
+      <div class="flex justify-center mb-6">
+        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
+      </div>
+      <div class="card">
+        <form id="registerForm" class="space-y-4">
+          <div class="input-group">
+            <label>Nome</label>
+            <input type="text" name="username" required class="w-full p-3 rounded-xl border" />
+          </div>
+          <div class="input-group">
+            <label>Senha</label>
+            <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
+          </div>
+          <button type="submit" class="btn btn-primary">Registrar</button>
+          <button type="button" id="btnBack" class="btn btn-secondary mt-2">Voltar</button>
+        </form>
+      </div>
+    </div>
+  `;
+  document.getElementById('registerForm').onsubmit = handleRegister;
+  document.getElementById('btnBack').onclick = showLoginScreen;
+  setTimeout(() => lucide.createIcons(), 100);
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const username = e.target.username.value.trim();
+  const password = e.target.password.value;
 
   db.ref('users/' + username).once('value')
     .then(snapshot => {
-      const userData = snapshot.val();
-      if (userData && userData.password === hashPassword(password)) {
+      const user = snapshot.val();
+      if (user && user.password === password) {
         localStorage.setItem('currentUser', username);
-        showToast(`✅ Bem-vindo, ${username}!`);
-        callback(true);
+        showToast('Bem-vindo ao NeoBank OS!');
+        loadDashboard(username);
       } else {
-        showToast('❌ Usuário ou senha incorretos.');
-        callback(false);
+        alert('Usuário ou senha incorretos.');
       }
     })
     .catch(err => {
-      console.error('Erro ao verificar usuário:', err);
-      showToast('❌ Erro ao verificar usuário: ' + err.message);
-      callback(false);
+      alert('Erro: ' + err.message);
     });
 }
 
-function registerUser(username, password, callback) {
-  if (!username || !password) {
-    showToast('❌ Preencha todos os campos.');
-    callback(false);
-    return;
-  }
+function handleRegister(e) {
+  e.preventDefault();
+  const username = e.target.username.value.trim();
+  const password = e.target.password.value;
 
   db.ref('users/' + username).once('value')
     .then(snapshot => {
       if (snapshot.exists()) {
-        showToast('❌ Usuário já existe.');
-        callback(false);
-      } else {
-        const hashedPassword = hashPassword(password);
-        db.ref('users/' + username).set({
-          username,
-          password: hashedPassword,
-          balance: 1000,
-          xp: 0,
-          level: 1,
-          avatar: 'https://api.dicebear.com/9.x/thumbs/svg?seed=' + username,
-          transactions: {},
-          investments: {},
-          achievements: {}
-        }).then(() => {
-          localStorage.setItem('currentUser', username);
-          showToast(`✅ Conta criada para ${username}!`);
-          callback(true);
-        }).catch(err => {
-          console.error('Erro ao criar conta:', err);
-          showToast('❌ Erro ao criar conta: ' + err.message);
-          callback(false);
-        });
+        alert('Usuário já existe.');
+        return;
       }
-    })
-    .catch(err => {
-      console.error('Erro ao verificar usuário:', err);
-      showToast('❌ Erro ao verificar usuário: ' + err.message);
-      callback(false);
+
+      const newUser = {
+        username,
+        password,
+        avatar: 'img/avatar-default.png',
+        balance: 1000,
+        gameBalance: 0,
+        helpCount: 3,
+        gamesPlayed: 0,
+        xp: 0,
+        level: 1,
+        transactions: [],
+        achievements: [],
+        createdAt: new Date().toISOString()
+      };
+
+      db.ref('users/' + username).set(newUser)
+        .then(() => {
+          localStorage.setItem('currentUser', username);
+          showToast('Conta criada! +100 OSD de boas-vindas!');
+          loadDashboard(username);
+        })
+        .catch(err => {
+          alert('Erro: ' + err.message);
+        });
     });
 }
