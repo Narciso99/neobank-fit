@@ -1,118 +1,68 @@
-function showLoginScreen() {
-  const app = document.getElementById('app');
-  if (!app) return;
-  app.innerHTML = `
-    <div class="container">
-      <div class="text-center mb-8">
-        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank OS</h1>
-      </div>
-      <div class="card">
-        <form id="loginForm" class="space-y-4">
-          <div class="input-group">
-            <label>Usuário</label>
-            <input type="text" name="username" required class="w-full p-3 rounded-xl border" />
-          </div>
-          <div class="input-group">
-            <label>Senha</label>
-            <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
-          </div>
-          <button type="submit" class="btn btn-primary">Entrar</button>
-          <button type="button" id="btnRegister" class="btn btn-secondary mt-2">Criar Conta</button>
-        </form>
-      </div>
-    </div>
-  `;
-  document.getElementById('loginForm').onsubmit = handleLogin;
-  document.getElementById('btnRegister').onclick = showRegisterScreen;
-  setTimeout(() => lucide.createIcons(), 100);
+function showSignup() {
+  document.getElementById('auth-form').style.display = 'none';
+  document.getElementById('signup-form').style.display = 'block';
 }
 
-function showRegisterScreen() {
-  const app = document.getElementById('app');
-  if (!app) return;
-  app.innerHTML = `
-    <div class="container">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Criar Conta</h1>
-      </div>
-      <div class="card">
-        <form id="registerForm" class="space-y-4">
-          <div class="input-group">
-            <label>Nome</label>
-            <input type="text" name="username" required class="w-full p-3 rounded-xl border" />
-          </div>
-          <div class="input-group">
-            <label>Senha</label>
-            <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
-          </div>
-          <button type="submit" class="btn btn-primary">Registrar</button>
-          <button type="button" id="btnBack" class="btn btn-secondary mt-2">Voltar</button>
-        </form>
-      </div>
-    </div>
-  `;
-  document.getElementById('registerForm').onsubmit = handleRegister;
-  document.getElementById('btnBack').onclick = showLoginScreen;
-  setTimeout(() => lucide.createIcons(), 100);
+function showLogin() {
+  document.getElementById('signup-form').style.display = 'none';
+  document.getElementById('recover-form').style.display = 'none';
+  document.getElementById('auth-form').style.display = 'block';
 }
 
-function handleLogin(e) {
-  e.preventDefault();
-  const username = e.target.username.value.trim();
-  const password = e.target.password.value;
-
-  db.ref('users/' + username).once('value')
-    .then(snapshot => {
-      const user = snapshot.val();
-      if (user && user.password === password) {
-        localStorage.setItem('currentUser', username);
-        showToast('Bem-vindo!');
-        loadDashboard(username);
-      } else {
-        alert('Usuário ou senha incorretos.');
-      }
-    });
+function showRecover() {
+  document.getElementById('auth-form').style.display = 'none';
+  document.getElementById('recover-form').style.display = 'block';
 }
 
-function handleRegister(e) {
-  e.preventDefault();
-  const username = e.target.username.value.trim();
-  const password = e.target.password.value;
+function signup() {
+  const username = document.getElementById('signup-username').value;
+  const password = document.getElementById('signup-password').value;
+  const email = `${username}@neobank.com`;
+  const iban = `OSPT${Math.random().toString().slice(2, 18)}`;
 
-  db.ref('users/' + username).once('value')
-    .then(snapshot => {
-      if (snapshot.exists()) {
-        alert('Usuário já existe.');
-        return;
-      }
-
-      const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
-      const email = `${username}@neobank.com`;
-
-      const newUser = {
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      const user = userCredential.user;
+      firebase.database().ref('users/' + user.uid).set({
         username,
-        password,
-        avatar: 'img/avatar-default.png',
+        email,
+        iban,
         balance: 1000,
         gameBalance: 0,
-        helpCount: 3,
-        gamesPlayed: 0,
-        xp: 0,
-        level: 1,
-        iban: iban,
-        email: email,
-        transactions: [],
-        investments: [],
-        achievements: [],
-        createdAt: new Date().toISOString()
-      };
+        helpsUsed: 0
+      }).then(() => {
+        showToast('Conta criada com sucesso!');
+        showLogin();
+      });
+    })
+    .catch(error => showToast('Erro ao criar conta: ' + error.message));
+}
 
-      db.ref('users/' + username).set(newUser)
-        .then(() => {
-          localStorage.setItem('currentUser', username);
-          showToast('Conta criada! +100 OSD!');
-          loadDashboard(username);
-        });
-    });
+function login() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const email = `${username}@neobank.com`;
+
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadDashboard(userCredential.user.uid);
+    })
+    .catch(error => showToast('Erro ao logar: ' + error.message));
+}
+
+function logout() {
+  firebase.auth().signOut().then(() => {
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'block';
+  });
+}
+
+function recoverPassword() {
+  const username = document.getElementById('recover-username').value;
+  const email = `${username}@neobank.com`;
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(() => showToast('Email de recuperação enviado!'))
+    .catch(error => showToast('Erro: ' + error.message));
 }
