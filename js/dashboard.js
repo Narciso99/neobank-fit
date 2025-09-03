@@ -1,75 +1,22 @@
-let currentUser = null;
-
-function loadDashboard(username) {
-  currentUser = username;
-  const userRef = db.ref('users/' + username);
-  
-  userRef.on('value', snapshot => {
-    const user = snapshot.val();
-    if (!user) {
-      showToast('Usuário não encontrado.');
-      showLoginScreen();
-      return;
-    }
-    user.level = Math.floor((user.xp || 0) / 100) + 1;
-    renderDashboard(user, username);
-  });
-}
-
+// dashboard.js
 function renderDashboard(user, username) {
   const app = document.getElementById('app');
   if (!app) return;
 
   const transactions = Object.values(user.transactions || {}).slice(-5).reverse();
   const transactionItems = transactions.length ? transactions.map(t => {
-    const icons = {
-      deposit: 'plus-circle text-green-500',
-      withdraw: 'minus-circle text-red-500',
-      pix_in: 'qr-code text-blue-500',
-      pix_out: 'qr-code text-orange-500',
-      transfer_in: 'arrow-down-right text-purple-500',
-      transfer_out: 'arrow-up-right text-gray-500',
-      investment_gain: 'trending-up text-indigo-500'
-    }[t.type] || 'circle';
-
-    const label = {
-      deposit: `+${t.amount} OSD`,
-      withdraw: `-${t.amount} OSD`,
-      pix_in: `+${t.amount} (Pix) ← ${t.target}`,
-      pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      transfer_in: `+${t.amount} (IBAN) ← ${t.target}`,
-      transfer_out: `-${t.amount} (IBAN) → ${t.target}`,
-      investment_gain: `💰 +${t.amount.toFixed(2)} OSD de investimento`
-    }[t.type] || t.type;
-
-    const amountClass = {
-      deposit: 'amount-positive',
-      pix_in: 'amount-positive',
-      transfer_in: 'amount-positive',
-      investment_gain: 'amount-investment',
-      withdraw: 'amount-negative',
-      pix_out: 'amount-negative',
-      transfer_out: 'amount-negative'
-    }[t.type] || 'amount-negative';
-
     return `
-      <li class="transaction-item">
-        <div class="transaction-icon">
-          <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5"></i>
-        </div>
-        <div class="transaction-content">
-          <p class="transaction-label">${label}</p>
-          <p class="transaction-date">${t.date}</p>
-        </div>
-        <span class="transaction-amount ${amountClass}">${t.amount} OSD</span>
+      <li class="py-2 border-b">
+        <span class="font-medium">${t.amount} OSD</span>
+        <span class="text-xs text-muted ml-2">${t.date}</span>
       </li>
     `;
-  }).join('') : '<li class="text-muted text-center py-2">Nenhuma transação</li>';
+  }).join('') : '<li class="text-muted">Sem transações</li>';
 
   app.innerHTML = `
     <header class="header">
       <div class="flex items-center gap-3">
-        <img src="${user.avatar}" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300 shadow-sm" />
+        <img src="${user.avatar}" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300" />
         <div>
           <h2 class="text-lg">Olá, ${user.username}!</h2>
           <p class="text-sm text-muted">Nível ${user.level}</p>
@@ -88,17 +35,24 @@ function renderDashboard(user, username) {
 
       <div class="grid grid-cols-2 gap-3 mb-6">
         <button onclick="showTransactionModal('withdraw')" class="btn btn-secondary py-4">Sacar</button>
-        <button onclick="showTransactionModal('transfer')" class="btn btn-secondary py-4">Transferir</button>
         <button onclick="showPixScreen()" class="btn btn-secondary py-4">Pix</button>
+        <button onclick="showCardScreen()" class="btn btn-secondary py-4">Cartão</button>
         <button onclick="showInvestmentsScreen()" class="btn btn-secondary py-4">Investir</button>
       </div>
 
       <div class="card">
-        <h3>IBAN</h3>
-        <p class="font-mono">${user.iban}</p>
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold">Últimas Movimentações</h3>
+          <button onclick="showFullTransactions('${username}')" class="text-primary text-sm">Ver tudo</button>
+        </div>
+        <ul id="transactionList" class="space-y-2">${transactionItems}</ul>
       </div>
 
-      <button onclick="showGamesScreen()" class="btn btn-primary w-full mb-2">Jogar e Ganhar OSD</button>
+      <div class="card">
+        <h3>Ganhe OSD Jogando 🎮</h3>
+        <button onclick="showGamesScreen()" class="btn btn-primary w-full my-2">Jogar e Ganhar OSD</button>
+        <button onclick="showRedemptionModal()" class="btn btn-secondary w-full">Resgatar Código</button>
+      </div>
     </main>
   `;
 
