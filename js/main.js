@@ -43,7 +43,10 @@ function showToast(msg) {
 
 function showLoginScreen() {
   const app = document.getElementById('app');
-  if (!app) return;
+  if (!app) {
+    console.error('Elemento #app não encontrado.');
+    return;
+  }
 
   app.innerHTML = `
     <div class="container">
@@ -57,7 +60,7 @@ function showLoginScreen() {
       </div>
     </div>
   `;
-  lucide.createIcons();
+  setTimeout(() => lucide.createIcons(), 100);
 }
 
 function login() {
@@ -84,29 +87,47 @@ function login() {
           xp: 0,
           level: 1,
           avatar: 'https://api.dicebear.com/9.x/thumbs/svg?seed=' + username,
-          transactions: {}
+          transactions: {},
+          investments: {}
         }).then(() => {
           localStorage.setItem('currentUser', username);
           showToast(`✅ Conta criada para ${username}!`);
           loadDashboard(username);
         }).catch(err => {
           showToast('❌ Erro ao criar conta: ' + err.message);
+          console.error('Erro ao criar conta:', err);
         });
       }
     })
     .catch(err => {
       showToast('❌ Erro ao verificar usuário: ' + err.message);
+      console.error('Erro ao verificar usuário:', err);
     });
 }
 
+// Função placeholder para getCurrentUser (usada em outros scripts)
+function getCurrentUser() {
+  const username = localStorage.getItem('currentUser');
+  if (!username) {
+    showLoginScreen();
+    return null;
+  }
+  return { username };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa elementos essenciais
   createThemeToggle();
   createToastElement();
+
+  // Carrega o dashboard ou tela de login
   const user = localStorage.getItem('currentUser');
   if (user) {
     loadDashboard(user);
   } else {
     showLoginScreen();
   }
+
+  // Inicializa ícones
   setTimeout(() => lucide.createIcons(), 200);
 });
