@@ -1,4 +1,3 @@
-// auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -114,7 +113,7 @@ function handleRegister(e) {
       db.ref('users/' + username).set(newUser)
         .then(() => {
           localStorage.setItem('currentUser', username);
-          showToast('Conta criada! +100 OSD de boas-vindas!');
+          showToast('Conta criada! +100 OSD!');
           loadDashboard(username);
         })
         .catch(err => {
