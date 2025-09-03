@@ -1,60 +1,124 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full" data-theme="light">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NeoBank OS</title>
-  <meta name="description" content="Banco digital com jogos, recompensas e investimentos" />
-
-  <!-- Fontes -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet" />
-
-  <!-- TailwindCSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Firebase SDK (compatível com CDN) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
-  <!-- Configuração do Firebase -->
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCwa1oA6Pwk7idNq-Uu_nNfrasXMOhCrmk",
-      authDomain: "neobank-fit.firebaseapp.com",
-      databaseURL: "https://neobank-fit-default-rtdb.firebaseio.com",
-      projectId: "neobank-fit",
-      storageBucket: "neobank-fit.firebasestorage.app",
-      messagingSenderId: "1084469171756",
-      appId: "1:1084469171756:web:72696d6690053182752389"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-  </script>
-
-  <!-- CSS Custom -->
-  <link rel="stylesheet" href="css/style.css" />
-
-  <!-- Manifest -->
-  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database-compat.js"></script>
 </head>
-<body class="font-sans h-full bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 transition-all duration-500">
-
-  <div id="app" class="min-h-screen flex flex-col"></div>
-  <div id="toast" class="toast">Operação realizada!</div>
-
-  <!-- Scripts -->
+<body class="dark-mode">
+  <div class="container">
+    <div id="auth-screen">
+      <h1>NeoBank OS</h1>
+      <div id="auth-form">
+        <input type="text" id="username" placeholder="Usuário">
+        <input type="password" id="password" placeholder="Senha">
+        <button onclick="login()">Entrar</button>
+        <button onclick="showSignup()">Cadastrar</button>
+        <button onclick="showRecover()">Recuperar Senha</button>
+      </div>
+      <div id="signup-form" style="display: none;">
+        <input type="text" id="signup-username" placeholder="Usuário">
+        <input type="password" id="signup-password" placeholder="Senha">
+        <button onclick="signup()">Criar Conta</button>
+        <button onclick="showLogin()">Voltar</button>
+      </div>
+      <div id="recover-form" style="display: none;">
+        <input type="text" id="recover-username" placeholder="Usuário">
+        <button onclick="recoverPassword()">Enviar Email</button>
+        <button onclick="showLogin()">Voltar</button>
+      </div>
+    </div>
+    <div id="dashboard" style="display: none;">
+      <header>
+        <h1>NeoBank OS</h1>
+        <button onclick="toggleTheme()">🌙</button>
+        <button onclick="logout()">Sair</button>
+      </header>
+      <div class="balance">
+        <h2>Saldo: <span id="balance">0</span> OSD</h2>
+        <p>Game Balance: <span id="game-balance">0</span> OSD</p>
+      </div>
+      <div class="card">
+        <h3>Cartão Virtual Visa</h3>
+        <div class="card-design">
+          <p>Número: XXXX XXXX XXXX <span id="card-number"></span></p>
+          <p>Limite: 1.500 OSD</p>
+        </div>
+      </div>
+      <div class="transactions">
+        <h3>Últimas Transações</h3>
+        <ul id="transaction-list"></ul>
+        <button onclick="showAllTransactions()">Ver tudo</button>
+      </div>
+      <div class="actions">
+        <button onclick="showPix()">Enviar Pix</button>
+        <button onclick="showTransfer()">Transferência IBAN</button>
+        <button onclick="showInvestments()">Investir</button>
+        <button onclick="showGame()">Jogar</button>
+        <button onclick="showRedeem()">Resgatar Código</button>
+      </div>
+      <button class="fab" onclick="showActions()">+</button>
+    </div>
+    <div id="pix-screen" style="display: none;">
+      <h2>Enviar Pix</h2>
+      <input type="text" id="pix-key" placeholder="Chave Pix (usuario@neobank.os)">
+      <input type="number" id="pix-amount" placeholder="Valor (OSD)">
+      <button onclick="sendPix()">Enviar</button>
+      <button onclick="backToDashboard()">Voltar</button>
+    </div>
+    <div id="transfer-screen" style="display: none;">
+      <h2>Transferência via IBAN</h2>
+      <input type="text" id="iban" placeholder="IBAN (OSPT...)">
+      <input type="number" id="transfer-amount" placeholder="Valor (OSD)">
+      <button onclick="transfer()">Transferir</button>
+      <button onclick="backToDashboard()">Voltar</button>
+    </div>
+    <div id="investments-screen" style="display: none;">
+      <h2>Investimentos</h2>
+      <select id="investment-option">
+        <option value="tech">Fundos de Tecnologia (Risco: Médio, Retorno: 8%)</option>
+        <option value="crypto">Criptomoedas (Risco: Alto, Retorno: 15%)</option>
+        <option value="gold">Ouro (Risco: Baixo, Retorno: 3%)</option>
+        <!-- Adicione mais opções conforme necessário -->
+      </select>
+      <input type="number" id="investment-amount" placeholder="Valor (OSD)">
+      <button onclick="invest()">Investir</button>
+      <button onclick="backToDashboard()">Voltar</button>
+    </div>
+    <div id="game-screen" style="display: none;">
+      <h2>Jogo de Perguntas</h2>
+      <p id="question"></p>
+      <div id="answers"></div>
+      <button onclick="useHelp()" id="help-btn">Ver Percentagens (0/3)</button>
+      <button onclick="generateCode()" id="generate-code-btn" style="display: none;">Gerar Código de Resgate</button>
+      <button onclick="backToDashboard()">Voltar</button>
+    </div>
+    <div id="redeem-screen" style="display: none;">
+      <h2>Resgatar Código</h2>
+      <input type="text" id="redeem-code" placeholder="Código de Resgate">
+      <button onclick="redeemCode()">Resgatar</button>
+      <button onclick="backToDashboard()">Voltar</button>
+    </div>
+    <div id="transactions-screen" style="display: none;">
+      <h2>Histórico de Transações</h2>
+      <ul id="all-transaction-list"></ul>
+      <button onclick="backToDashboard()">Voltar</button>
+    </div>
+    <div id="toast" class="toast"></div>
+  </div>
+  <script src="js/main.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/transactions.js"></script>
   <script src="js/pix.js"></script>
   <script src="js/card.js"></script>
-  <script src="js/achievements.js"></script>
   <script src="js/investments.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/main.js"></script>
   <script src="js/games.js"></script>
+  <script src="js/dashboard.js"></script>
 </body>
 </html>
