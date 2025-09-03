@@ -1,63 +1,107 @@
-// pix.js
-function showPixScreen() {
-  const user = getCurrentUser();
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="container">
-      <div class="header">
-        <h2>Pix - NeoBank OS</h2>
-      </div>
-      <div class="card">
-        <h3>Sua Chave Pix</h3>
-        <p class="text-primary mt-2">${user.username}@neobank.os</p>
-        <button onclick="copyPixKey('${user.username}')" class="btn btn-secondary mt-3">Copiar Chave</button>
-      </div>
-      <div class="card">
-        <h3>Enviar Pix</h3>
-        <div class="input-group">
-          <label>Chave (usuário@neobank.os)</label>
-          <input type="text" id="pixKey" placeholder="alice@neobank.os" class="w-full p-3 rounded-xl border" />
-        </div>
-        <div class="input-group">
-          <label>Valor (OSD)</label>
-          <input type="number" id="pixAmount" placeholder="100" class="w-full p-3 rounded-xl border" />
-        </div>
-        <button onclick="sendPix()" class="btn btn-primary">Enviar Pix</button>
-      </div>
-      <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost mt-4">Voltar</button>
-    </div>
-  `;
-  setTimeout(() => lucide.createIcons(), 100);
-}
-
-function copyPixKey(key) {
-  navigator.clipboard.writeText(key + '@neobank.os');
-  showToast('Chave Pix copiada!');
+function showPix() {
+  document.querySelectorAll('.container > div').forEach(div => div.style.display = 'none');
+  document.getElementById('pix-screen').style.display = 'block';
 }
 
 function sendPix() {
-  const key = document.getElementById('pixKey').value.trim().replace('@neobank.os', '');
-  const amount = parseFloat(document.getElementById('pixAmount').value);
-  const sender = getCurrentUser();
+  const pixKey = document.getElementById('pix-key').value;
+  const amount = parseFloat(document.getElementById('pix-amount').value);
+  const uid = firebase.auth().currentUser.uid;
 
-  db.ref('users/' + key).once('value').then(snap => {
-    if (!snap.exists()) {
-      alert('Usuário não encontrado.');
+  if (!pixKey.endsWith('@neobank.os') || amount <= 0) {
+    showToast('Chave Pix ou valor inválido!');
+    return;
+  }
+
+  const username = pixKey.split('@')[0];
+  firebase.database().ref('users').orderByChild('username').equalTo(username).once('value', snapshot => {
+    if (!snapshot.exists()) {
+      showToast('Usuário não encontrado!');
       return;
     }
 
-    db.ref('users/' + sender.username).once('value').then(userSnap => {
-      if (userSnap.val().balance < amount) {
-        alert('Saldo insuficiente.');
+    const recipientUid = Object.keys(snapshot.val())[0];
+    firebase.database().ref(`users/${uid}`).once('value').then(userSnapshot => {
+      const senderBalance = userSnapshot.val().balance;
+      if (senderBalance < amount) {
+        showToast('Saldo insuficiente!');
         return;
       }
 
-      updateUserBalance(sender.username, -amount);
-      updateUserBalance(key, amount);
-      addTransaction(sender.username, 'pix_out', amount, key);
-      addTransaction(key, 'pix_in', amount, sender.username);
-      showToast(`${amount} OSD enviado via Pix!`);
-      setTimeout(() => loadDashboard(sender.username), 1500);
+      firebase.database().ref(`users/${uid}`).update({ balance: senderBalance - amount });
+      firebase.database().ref(`users/${recipientUid}`).update({
+        balance: snapshot.val()[recipientUid].balance + amount
+      });
+
+      firebase.database().ref(`transactions/${uid}`).push({
+        type: 'pix',
+        amount: -amount,
+        date: Date.now()
+      });
+
+      firebase.database().ref(`transactions/${recipientUid}`).push({
+        type: 'pix',
+        amount,
+        date: Date.now()
+      });
+
+      showToast('Pix enviado com sucesso!');
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`Você recebeu ${amount} OSD via Pix!`);
+      }
+      backToDashboard();
+    });
+  });
+}
+
+function showTransfer() {
+  document.querySelectorAll('.container > div').forEach(div => div.style.display = 'none');
+  document.getElementById('transfer-screen').style.display = 'block';
+}
+
+function transfer() {
+  const iban = document.getElementById('iban').value;
+  const amount = parseFloat(document.getElementById('transfer-amount').value);
+  const uid = firebase.auth().currentUser.uid;
+
+  if (!iban.startsWith('OSPT') || iban.length !== 22 || amount <= 0) {
+    showToast('IBAN ou valor inválido!');
+    return;
+  }
+
+  firebase.database().ref('users').orderByChild('iban').equalTo(iban).once('value', snapshot => {
+    if (!snapshot.exists()) {
+      showToast('IBAN não encontrado!');
+      return;
+    }
+
+    const recipientUid = Object.keys(snapshot.val())[0];
+    firebase.database().ref(`users/${uid}`).once('value').then(userSnapshot => {
+      const senderBalance = userSnapshot.val().balance;
+      if (senderBalance < amount) {
+        showToast('Saldo insuficiente!');
+        return;
+      }
+
+      firebase.database().ref(`users/${uid}`).update({ balance: senderBalance - amount });
+      firebase.database().ref(`users/${recipientUid}`).update({
+        balance: snapshot.val()[recipientUid].balance + amount
+      });
+
+      firebase.database().ref(`transactions/${uid}`).push({
+        type: 'withdraw',
+        amount: -amount,
+        date: Date.now()
+      });
+
+      firebase.database().ref(`transactions/${recipientUid}`).push({
+        type: 'deposit',
+        amount,
+        date: Date.now()
+      });
+
+      showToast('Transferência realizada com sucesso!');
+      backToDashboard();
     });
   });
 }
