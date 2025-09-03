@@ -2,22 +2,7 @@
 const investmentOptions = [
   { name: "Fundos de Tecnologia", risk: "Alto", return: "12-18%" },
   { name: "Títulos do Tesouro", risk: "Baixo", return: "5-7%" },
-  { name: "Ações Internacionais", risk: "Alto", return: "10-15%" },
-  { name: "Criptomoedas", risk: "Muito Alto", return: "20-100%" },
-  { name: "Fundos Imobiliários", risk: "Médio", return: "8-12%" },
-  { name: "Startups", risk: "Muito Alto", return: "30-200%" },
-  { name: "Ouro", risk: "Baixo", return: "3-6%" },
-  { name: "Energia Solar", risk: "Médio", return: "9-14%" },
-  { name: "Agricultura", risk: "Médio", return: "7-10%" },
-  { name: "Educação", risk: "Baixo", return: "6-9%" },
-  { name: "Saúde", risk: "Médio", return: "8-13%" },
-  { name: "Logística", risk: "Médio", return: "7-11%" },
-  { name: "Turismo", risk: "Alto", return: "10-18%" },
-  { name: "IA e Machine Learning", risk: "Alto", return: "15-25%" },
-  { name: "Espaço e Satélites", risk: "Muito Alto", return: "20-50%" },
-  { name: "Blockchain", risk: "Alto", return: "12-20%" },
-  { name: "Sustentabilidade", risk: "Médio", return: "8-12%" },
-  { name: "Fintechs", risk: "Alto", return: "10-16%" }
+  { name: "Ações Internacionais", risk: "Alto", return: "10-15%" }
 ];
 
 function showInvestmentsScreen() {
