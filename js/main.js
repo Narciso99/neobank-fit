@@ -1,4 +1,4 @@
-// main.js
+// main.js - Funções globais
 function createThemeToggle() {
   if (document.getElementById('theme-toggle')) return;
 
@@ -6,10 +6,24 @@ function createThemeToggle() {
   toggle.id = 'theme-toggle';
   toggle.innerHTML = '<i data-lucide="sun" class="w-6 h-6"></i>';
   toggle.style.cssText = `
-    position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px;
-    border-radius: 50%; background: #003366; color: white; display: flex;
-    align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    z-index: 1000; cursor: pointer; border: none; outline: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #003366;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    z-index: 1000;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    transition: all 0.3s ease;
+    animation: pulse 2s infinite;
   `;
 
   toggle.onclick = () => {
