@@ -7,19 +7,33 @@ function loadDashboard(username) {
   const app = document.getElementById('app');
   if (!app) {
     console.error('Elemento #app não encontrado.');
-    showToast('❌ Erro ao carregar dashboard.');
+    showToast('❌ Erro interno: contêiner da aplicação não encontrado.');
+    showLoginScreen(); // Fallback to login if app container is missing
     return;
   }
 
+  // Clear previous content
+  app.innerHTML = '<div class="skeleton skeleton--card"></div>'; // Show skeleton loader
+
+  // Fetch user data from Firebase
   db.ref('users/' + username).once('value')
     .then(snapshot => {
-      const userData = snapshot.val() || {};
+      if (!snapshot.exists()) {
+        console.error('Usuário não encontrado no Firebase:', username);
+        showToast('❌ Sessão inválida. Faça login novamente.');
+        localStorage.removeItem('currentUser');
+        showLoginScreen();
+        return;
+      }
+
+      const userData = snapshot.val();
       const balance = userData.balance || 0;
       const xp = userData.xp || 0;
       const level = userData.level || 1;
       const avatar = userData.avatar || 'https://api.dicebear.com/9.x/thumbs/svg?seed=' + username;
       const transactions = userData.transactions || {};
 
+      // Render dashboard
       app.innerHTML = `
         <div class="container">
           <div class="header">
@@ -34,39 +48,45 @@ function loadDashboard(username) {
           <div class="card">
             <h3>Transferir</h3>
             <div class="input-group">
-              <label for="transfer-to">Destinatário</label>
-              <input type="text" id="transfer-to" placeholder="Nome de usuário" class="w-full" />
+              <label for="transfer-to" class="field__label">Destinatário</label>
+              <input type="text" id="transfer-to" placeholder="Nome de usuário" class="input w-full" />
             </div>
             <div class="input-group">
-              <label for="transfer-amount">Valor (OSD)</label>
-              <input type="number" id="transfer-amount" placeholder="0.00" step="0.01" class="w-full" />
+              <label for="transfer-amount" class="field__label">Valor (OSD)</label>
+              <input type="number" id="transfer-amount" placeholder="0.00" step="0.01" class="input w-full" />
             </div>
-            <p id="transfer-error" class="text-sm text-red-500 mt-1 hidden"></p>
-            <button onclick="transfer('${username}')" class="btn btn-primary w-full mt-4">Transferir</button>
+            <p id="transfer-error" class="field__error hidden"></p>
+            <button onclick="transfer('${username}')" class="btn btn--primary w-full mt-4">Transferir</button>
           </div>
           <div class="card">
             <h3>Histórico de Transações</h3>
-            <div id="transaction-list"></div>
+            <div id="transaction-list" class="skeleton skeleton--text"></div>
           </div>
-          <button onclick="receiveReward('${username}')" class="btn btn-secondary w-full mt-4">Receber Recompensa</button>
-          <button onclick="showInvestmentsScreen()" class="btn btn-ghost w-full mt-2">Investimentos</button>
-          <button onclick="logout()" class="btn btn-ghost w-full mt-2">Sair</button>
+          <button onclick="receiveReward('${username}')" class="btn btn--success w-full mt-4">Receber Recompensa</button>
+          <button onclick="showInvestmentsScreen()" class="btn btn--ghost w-full mt-2">Investimentos</button>
+          <button onclick="logout()" class="btn btn--danger w-full mt-2">Sair</button>
         </div>
       `;
 
-      // Render transaction list
+      // Render transactions
       renderTransactions(transactions);
       setTimeout(() => lucide.createIcons(), 100);
+      console.log('Dashboard carregado para:', username);
     })
     .catch(err => {
+      console.error('Erro ao carregar dados do usuário:', err);
       showToast('❌ Erro ao carregar dashboard: ' + err.message);
-      console.error('Erro ao carregar dashboard:', err);
+      app.innerHTML = '<div class="container"><div class="card text-center"><p class="text-muted">Erro ao carregar. Tente novamente.</p></div></div>';
     });
 }
 
 function renderTransactions(transactions) {
   const transactionList = document.getElementById('transaction-list');
-  if (!transactionList) return;
+  if (!transactionList) {
+    console.error('Elemento #transaction-list não encontrado.');
+    showToast('❌ Erro ao carregar transações.');
+    return;
+  }
 
   const transactionArray = Object.entries(transactions).map(([key, t]) => ({
     key,
@@ -86,7 +106,7 @@ function renderTransactions(transactions) {
           <p class="text-sm text-muted">${t.description}</p>
           <p class="text-sm text-muted">${new Date(t.timestamp).toLocaleString()}</p>
         </div>
-        <p class="${t.amount >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">
+        <p class="${t.amount >= 0 ? 'badge badge--success' : 'badge badge--danger'}">
           ${t.amount >= 0 ? '+' : ''}${t.amount.toFixed(2)} OSD
         </p>
       </div>
@@ -98,8 +118,14 @@ function transfer(username) {
   const toInput = document.getElementById('transfer-to');
   const amountInput = document.getElementById('transfer-amount');
   const error = document.getElementById('transfer-error');
-  const to = toInput ? toInput.value.trim() : '';
-  const amount = amountInput ? parseFloat(amountInput.value) : 0;
+  if (!toInput || !amountInput || !error) {
+    console.error('Elementos de transferência não encontrados.');
+    showToast('❌ Erro interno: formulário de transferência inválido.');
+    return;
+  }
+
+  const to = toInput.value.trim();
+  const amount = parseFloat(amountInput.value);
 
   if (!to || !amount || amount <= 0) {
     error.textContent = 'Preencha o destinatário e um valor válido.';
@@ -133,7 +159,11 @@ function transfer(username) {
 
           // Perform transfer
           db.ref('users/' + username + '/balance').transaction(balance => balance - amount)
-            .then(() => {
+            .then(result => {
+              if (!result.committed) {
+                showToast('❌ Falha na transferência: saldo insuficiente.');
+                return;
+              }
               db.ref('users/' + to + '/balance').transaction(balance => (balance || 0) + amount)
                 .then(() => {
                   // Record transaction for sender
@@ -150,23 +180,23 @@ function transfer(username) {
                   }
                 })
                 .catch(err => {
+                  console.error('Erro ao processar transferência para destinatário:', err);
                   showToast('❌ Erro ao processar transferência: ' + err.message);
-                  console.error('Erro ao processar transferência:', err);
                 });
             })
             .catch(err => {
-              showToast('❌ Erro ao processar transferência: ' + err.message);
               console.error('Erro ao processar transferência:', err);
+              showToast('❌ Erro ao processar transferência: ' + err.message);
             });
         })
         .catch(err => {
-          showToast('❌ Erro ao verificar saldo: ' + err.message);
           console.error('Erro ao verificar saldo:', err);
+          showToast('❌ Erro ao verificar saldo: ' + err.message);
         });
     })
     .catch(err => {
-      showToast('❌ Erro ao verificar destinatário: ' + err.message);
       console.error('Erro ao verificar destinatário:', err);
+      showToast('❌ Erro ao verificar destinatário: ' + err.message);
     });
 }
 
@@ -184,17 +214,22 @@ function addTransaction(username, type, amount, description) {
       })
       .catch(err => {
         console.error('Erro ao atualizar transações:', err);
+        showToast('❌ Erro ao atualizar transações: ' + err.message);
       });
   }).catch(err => {
-    showToast('❌ Erro ao registrar transação: ' + err.message);
     console.error('Erro ao registrar transação:', err);
+    showToast('❌ Erro ao registrar transação: ' + err.message);
   });
 }
 
 function receiveReward(username) {
   const reward = 10 + Math.floor(Math.random() * 90); // Random reward between 10 and 100 OSD
   db.ref('users/' + username + '/balance').transaction(balance => (balance || 0) + reward)
-    .then(() => {
+    .then(result => {
+      if (!result.committed) {
+        showToast('❌ Falha ao receber recompensa.');
+        return;
+      }
       db.ref('users/' + username + '/xp').transaction(xp => (xp || 0) + 10)
         .then(() => {
           addTransaction(username, 'reward', reward, 'Recompensa Diária');
@@ -208,13 +243,13 @@ function receiveReward(username) {
           }
         })
         .catch(err => {
-          showToast('❌ Erro ao adicionar XP: ' + err.message);
           console.error('Erro ao adicionar XP:', err);
+          showToast('❌ Erro ao adicionar XP: ' + err.message);
         });
     })
     .catch(err => {
-      showToast('❌ Erro ao receber recompensa: ' + err.message);
       console.error('Erro ao receber recompensa:', err);
+      showToast('❌ Erro ao receber recompensa: ' + err.message);
     });
 }
 
