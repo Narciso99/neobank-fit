@@ -26,7 +26,7 @@ function signup() {
   const email = `${username}@neobank.com`;
 
   // Validação de entrada
-  if (!username || username.length < 3) {
+  if (!username || username.length < 3)And {
     showToast('O usuário deve ter pelo menos 3 caracteres!');
     console.error('Erro: Username inválido', username);
     return;
@@ -37,14 +37,14 @@ function signup() {
     return;
   }
 
-  // Verificar se o Firebase está inicializado
+  // Verificar inicialização do Firebase
   if (!firebase.auth()) {
-    showToast('Erro: Firebase não inicializado corretamente!');
+    showToast('Erro: Firebase Authentication não inicializado!');
     console.error('Firebase Auth não está disponível');
     return;
   }
 
-  // Verificar se o username já existe no Realtime Database
+  // Verificar se o username já existe
   console.log('Verificando unicidade do username:', username);
   firebase.database().ref('users').orderByChild('username').equalTo(username).once('value')
     .then(snapshot => {
@@ -71,7 +71,7 @@ function signup() {
             email,
             iban,
             balance: 1000,
-           {gmBalance: 0,
+            gameBalance: 0,
             helpsUsed: 0
           });
         })
@@ -93,7 +93,10 @@ function signup() {
               errorMessage += 'A senha é muito fraca!';
               break;
             case 'auth/operation-not-allowed':
-              errorMessage += 'Cadastro por email/senha não habilitado!';
+              errorMessage += 'Cadastro por email/senha não habilitado no Firebase!';
+              break;
+            case 'auth/network-request-failed':
+              errorMessage += 'Falha de rede. Verifique sua conexão ou CORS!';
               break;
             default:
               errorMessage += error.message;
@@ -103,7 +106,7 @@ function signup() {
         });
     })
     .catch(error => {
-      show toast('Erro ao verificar usuário: ' + error.message);
+      showToast('Erro ao verificar usuário: ' + error.message);
       console.error('Erro ao verificar username:', error.message);
     });
 }
@@ -138,6 +141,9 @@ function login() {
           break;
         case 'auth/invalid-email':
           errorMessage += 'Email inválido!';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage += 'Falha de rede. Verifique sua conexão!';
           break;
         default:
           errorMessage += error.message;
@@ -186,6 +192,9 @@ function recoverPassword() {
           break;
         case 'auth/invalid-email':
           errorMessage += 'Email inválido!';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage += 'Falha de rede. Verifique sua conexão!';
           break;
         default:
           errorMessage += error.message;
