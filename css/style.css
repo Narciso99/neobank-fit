@@ -1,4 +1,4 @@
-/* style.css - NeoBank OS 2.0 */
+/* style.css - NeoBank OS 3.0 */
 :root {
   --primary: #003366;
   --primary-light: #0055cc;
@@ -201,7 +201,7 @@ body.dark .input-group select {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
   z-index: 1000;
   cursor: pointer;
   animation: pulse 2s infinite;
@@ -210,7 +210,7 @@ body.dark .input-group select {
 
 #theme-toggle:hover {
   transform: scale(1.1);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 
 @keyframes pulse {
