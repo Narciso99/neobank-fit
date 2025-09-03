@@ -1,26 +1,42 @@
-// investments.js
+let investmentInterval;
 
 function showInvestmentsScreen() {
   const user = getCurrentUser();
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Fetch user balance from Firebase
-  db.ref('users/' + user.username + '/balance').once('value')
+  // Clear previous interval if any
+  if (investmentInterval) {
+    clearInterval(investmentInterval);
+  }
+
+  // Fetch user balance and investments
+  db.ref('users/' + user.username).once('value')
     .then(snapshot => {
-      const balance = snapshot.val() || 0;
-      renderInvestments(app, user.username, balance);
+      const data = snapshot.val() || {};
+      const balance = data.balance || 0;
+      const investments = data.investments || {};
+      renderInvestments(app, user.username, balance, investments);
+
+      // Start minute-by-minute updates
+      investmentInterval = setInterval(() => {
+        updateInvestmentReturns(user.username);
+      }, 60000); // Every minute
     })
     .catch(err => {
-      showToast('Erro ao carregar saldo: ' + err.message);
+      showToast('Erro ao carregar dados: ' + err.message);
     });
 }
 
-function renderInvestments(app, username, balance) {
+function renderInvestments(app, username, balance, investments) {
   app.innerHTML = `
     <div class="container">
       <div class="header">
         <h2>Investimentos</h2>
+      </div>
+      <div class="card text-center mb-4">
+        <p class="text-muted">Saldo Disponível</p>
+        <p class="balance-display" id="balance-display">${balance.toFixed(2)} <span class="osd">OSD</span></p>
       </div>
       ${generateInvestmentCard(1, 'Fundo OSD Tech', 8, 12, 'Alto', 100, balance)}
       ${generateInvestmentCard(2, 'EcoBonds Verde', 3, 5, 'Baixo', 50, balance)}
@@ -55,13 +71,54 @@ function generateInvestmentCard(id, name, minYield, maxYield, risk, minAmount, b
       <p class="osd">Risco: ${risk} | Mínimo: ${minAmount} OSD</p>
       <div class="input-group">
         <label for="invest${id}">Valor a investir (OSD)</label>
-        <div class="flex gap-2">
-          <input type="number" id="invest${id}" placeholder="${minAmount}" min="${minAmount}" max="${balance}" step="0.01" class="flex-1" />
-          <button onclick="invest(${id}, ${minAmount}, '${name}')" class="btn btn-primary">Investir</button>
+        <div class="relative">
+          <input 
+            type="number" 
+            id="invest${id}" 
+            placeholder="${minAmount}" 
+            min="${minAmount}" 
+            max="${balance}" 
+            step="0.01" 
+            class="flex-1 w-full pr-16" 
+            oninput="validateInvestmentInput(${id}, ${minAmount}, ${balance})"
+          />
+          <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted">OSD</span>
         </div>
+        <p id="error-invest${id}" class="text-sm text-red-500 mt-1 hidden"></p>
+        <button 
+          id="btn-invest${id}" 
+          onclick="invest(${id}, ${minAmount}, '${name}')" 
+          class="btn btn-primary mt-2 w-full" 
+          disabled
+        >Investir</button>
       </div>
     </div>
   `;
+}
+
+function validateInvestmentInput(id, minAmount, balance) {
+  const input = document.getElementById('invest' + id);
+  const error = document.getElementById('error-invest' + id);
+  const button = document.getElementById('btn-invest' + id);
+  const amount = parseFloat(input.value);
+
+  error.classList.add('hidden');
+  button.disabled = true;
+
+  if (isNaN(amount)) {
+    return;
+  }
+
+  if (amount < minAmount) {
+    error.textContent = `O valor mínimo é ${minAmount} OSD.`;
+    error.classList.remove('hidden');
+  } else if (amount > balance) {
+    error.textContent = `Saldo insuficiente. Máximo disponível: ${balance.toFixed(2)} OSD.`;
+    error.classList.remove('hidden');
+    input.value = balance; // Auto-correct to max
+  } else {
+    button.disabled = false;
+  }
 }
 
 function invest(fundId, minAmount, fundName) {
@@ -70,39 +127,27 @@ function invest(fundId, minAmount, fundName) {
   const amount = parseFloat(input.value) || minAmount;
 
   if (isNaN(amount) || amount < minAmount) {
-    showToast(`❌ O valor mínimo para ${fundName} é ${minAmount} OSD.`);
-    return;
+    return; // Silently prevent
   }
 
   db.ref('users/' + user.username + '/balance').transaction(balance => {
     if (balance >= amount) {
       return balance - amount;
     } else {
-      showToast(`❌ Saldo insuficiente para investir ${amount} OSD.`);
-      return balance;
+      return balance; // Silently prevent
     }
   }).then(result => {
-    if (result.committed) {
+    if (result.committed && result.snapshot.val() !== result.snapshot.val() + amount) { // Check if deduction happened
       showToast(`✅ Investimento de ${amount.toFixed(2)} OSD em ${fundName} realizado!`);
 
-      // Save investment record
+      // Save investment record with start time
       db.ref('users/' + user.username + '/investments').push({
         name: fundName,
         amount: amount,
-        date: new Date().toISOString(),
+        startDate: Date.now(),
+        lastUpdate: Date.now(),
         fundId: fundId
       });
-
-      // Simulate return
-      const returnRates = getReturnRates();
-      const rate = returnRates[fundId].min + Math.random() * (returnRates[fundId].max - returnRates[fundId].min);
-      const gain = amount * rate;
-
-      setTimeout(() => {
-        updateUserBalance(user.username, gain);
-        addTransaction(user.username, 'investment_gain', gain, fundName);
-        showToast(`💰 +${gain.toFixed(2)} OSD de retorno em ${fundName}!`);
-      }, 3000);
     }
   }).catch(err => {
     showToast('❌ Erro ao processar investimento: ' + err.message);
@@ -111,22 +156,68 @@ function invest(fundId, minAmount, fundName) {
 
 function getReturnRates() {
   return {
-    1: { min: 0.08, max: 0.12 },
-    2: { min: 0.03, max: 0.05 },
-    3: { min: 0.10, max: 0.20 },
-    4: { min: 0.05, max: 0.08 },
-    5: { min: 0.02, max: 0.035 },
-    6: { min: 0.09, max: 0.14 },
-    7: { min: 0.07, max: 0.13 },
-    8: { min: 0.04, max: 0.065 },
-    9: { min: 0.11, max: 0.18 },
-    10: { min: 0.06, max: 0.095 },
-    11: { min: 0.12, max: 0.22 },
-    12: { min: 0.025, max: 0.045 },
-    13: { min: 0.085, max: 0.15 },
-    14: { min: 0.075, max: 0.125 },
-    15: { min: 0.105, max: 0.19 },
+    1: { min: -0.04, max: 0.12 }, // Allow losses
+    2: { min: -0.01, max: 0.05 },
+    3: { min: -0.15, max: 0.20 },
+    4: { min: -0.03, max: 0.08 },
+    5: { min: -0.005, max: 0.035 },
+    6: { min: -0.05, max: 0.14 },
+    7: { min: -0.035, max: 0.13 },
+    8: { min: -0.015, max: 0.065 },
+    9: { min: -0.06, max: 0.18 },
+    10: { min: -0.025, max: 0.095 },
+    11: { min: -0.18, max: 0.22 },
+    12: { min: -0.01, max: 0.045 },
+    13: { min: -0.045, max: 0.15 },
+    14: { min: -0.04, max: 0.125 },
+    15: { min: -0.12, max: 0.19 },
   };
+}
+
+function updateInvestmentReturns(username) {
+  db.ref('users/' + username + '/investments').once('value')
+    .then(snapshot => {
+      const investments = snapshot.val() || {};
+      let totalGain = 0;
+
+      Object.entries(investments).forEach(([key, inv]) => {
+        const now = Date.now();
+        const minutesPassed = Math.floor((now - inv.lastUpdate) / 60000);
+        if (minutesPassed > 0) {
+          const rates = getReturnRates();
+          const rateRange = rates[inv.fundId] || { min: -0.05, max: 0.10 };
+          let gain = 0;
+          for (let i = 0; i < minutesPassed; i++) {
+            const minuteRate = (rateRange.min + Math.random() * (rateRange.max - rateRange.min)) / (30 * 24 * 60); // Minute rate (assuming monthly base)
+            gain += inv.amount * minuteRate;
+          }
+          totalGain += gain;
+          inv.amount += gain;
+          db.ref('users/' + username + '/investments/' + key).update({
+            amount: inv.amount,
+            lastUpdate: now
+          });
+          if (gain !== 0) {
+            addTransaction(username, 'investment_gain', gain, inv.name);
+          }
+        }
+      });
+
+      if (totalGain !== 0) {
+        updateUserBalance(username, totalGain);
+        showToast(`${totalGain > 0 ? '💰 +' : '📉 '}${totalGain.toFixed(2)} OSD de retornos em investimentos!`);
+        // Update balance display if on screen
+        const balanceDisplay = document.getElementById('balance-display');
+        if (balanceDisplay) {
+          db.ref('users/' + username + '/balance').once('value').then(snap => {
+            balanceDisplay.innerHTML = `${snap.val().toFixed(2)} <span class="osd">OSD</span>`;
+          });
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Erro ao atualizar retornos:', err);
+    });
 }
 
 function showCurrentInvestments(username) {
@@ -153,7 +244,7 @@ function showCurrentInvestments(username) {
             <div class="card">
               <h3>${inv.name}</h3>
               <p>Investido: ${inv.amount.toFixed(2)} OSD</p>
-              <p>Data: ${inv.date.split('T')[0]}</p>
+              <p>Data de Início: ${new Date(inv.startDate).toLocaleString()}</p>
             </div>
           `;
         });
@@ -196,7 +287,7 @@ function withdrawFromInvestment(username) {
             <div class="card">
               <h3>${inv.name}</h3>
               <p>Investido: ${inv.amount.toFixed(2)} OSD</p>
-              <p>Data: ${inv.date.split('T')[0]}</p>
+              <p>Data de Início: ${new Date(inv.startDate).toLocaleString()}</p>
               <button onclick="confirmWithdraw('${username}', '${inv.key}', ${inv.amount}, '${inv.name}')" class="btn btn-primary mt-2">Retirar</button>
             </div>
           `;
@@ -218,12 +309,10 @@ function withdrawFromInvestment(username) {
 
 function confirmWithdraw(username, invKey, amount, name) {
   if (confirm(`Confirma a retirada de ${amount.toFixed(2)} OSD de ${name}?`)) {
-    // Return the amount to balance
     updateUserBalance(username, amount);
-    // Remove the investment
     db.ref('users/' + username + '/investments/' + invKey).remove();
     showToast(`✅ ${amount.toFixed(2)} OSD retirados de ${name}.`);
-    withdrawFromInvestment(username); // Refresh list
+    withdrawFromInvestment(username);
   }
 }
 
@@ -239,19 +328,19 @@ function compoundInterestCalculator() {
       <div class="card">
         <div class="input-group">
           <label for="principal">Valor Inicial (OSD)</label>
-          <input type="number" id="principal" placeholder="1000" step="0.01" />
+          <input type="number" id="principal" placeholder="1000" step="0.01" class="w-full" />
         </div>
         <div class="input-group">
           <label for="rate">Taxa de Juros Anual (%)</label>
-          <input type="number" id="rate" placeholder="5" step="0.01" />
+          <input type="number" id="rate" placeholder="5" step="0.01" class="w-full" />
         </div>
         <div class="input-group">
           <label for="time">Tempo (anos)</label>
-          <input type="number" id="time" placeholder="10" />
+          <input type="number" id="time" placeholder="10" class="w-full" />
         </div>
         <div class="input-group">
           <label for="compounds">Compostos por Ano</label>
-          <input type="number" id="compounds" placeholder="12" />
+          <input type="number" id="compounds" placeholder="12" class="w-full" />
         </div>
         <button onclick="calculateCompound()" class="btn btn-primary w-full mt-4">Calcular</button>
         <p id="result" class="text-center mt-4 text-lg font-bold"></p>
