@@ -1,4 +1,3 @@
-// auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -88,7 +87,6 @@ function handleRegister(e) {
         return;
       }
 
-      // Gera IBAN único fixo
       const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
 
       const newUser = {
