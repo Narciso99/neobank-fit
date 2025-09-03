@@ -1,4 +1,3 @@
-// auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -20,14 +19,12 @@ function showLoginScreen() {
           </div>
           <button type="submit" class="btn btn-primary">Entrar</button>
           <button type="button" id="btnRegister" class="btn btn-secondary mt-2">Criar Conta</button>
-          <button type="button" id="btnRecover" class="btn btn-ghost mt-2">Recuperar Senha</button>
         </form>
       </div>
     </div>
   `;
   document.getElementById('loginForm').onsubmit = handleLogin;
   document.getElementById('btnRegister').onclick = showRegisterScreen;
-  document.getElementById('btnRecover').onclick = showRecoveryScreen;
   setTimeout(() => lucide.createIcons(), 100);
 }
 
