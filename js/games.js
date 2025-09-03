@@ -4,7 +4,7 @@ let helpsUsed = 0;
 const questions = [
   { question: "Quem pintou a Mona Lisa?", answers: ["Leonardo da Vinci", "Michelangelo", "Rafael", "Donatello"], correct: 0, category: "Arte" },
   { question: "Qual é a capital do Brasil?", answers: ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"], correct: 2, category: "Geografia" },
-  // Adicione mais 698 perguntas conforme necessário
+  // Adicione mais 698 perguntas
 ];
 
 function showGame() {
