@@ -1,15 +1,16 @@
+// auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank OS</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD!</p>
+        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3 glow" />
+        <h1 class="text-3xl font-bold gradient-text">NeoBank OS</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD e invista!</p>
       </div>
       <div class="flex justify-center mb-6">
-        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
+        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200 shadow-sm" />
       </div>
       <div class="card">
         <form id="loginForm" class="space-y-4">
@@ -38,7 +39,7 @@ function showRegisterScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Criar Conta</h1>
+        <h1 class="text-3xl font-bold gradient-text">Criar Conta</h1>
       </div>
       <div class="flex justify-center mb-6">
         <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
@@ -74,14 +75,11 @@ function handleLogin(e) {
       const user = snapshot.val();
       if (user && user.password === password) {
         localStorage.setItem('currentUser', username);
-        showToast('Bem-vindo ao NeoBank OS!');
+        showToast('Bem-vindo(a)!');
         loadDashboard(username);
       } else {
         alert('Usuário ou senha incorretos.');
       }
-    })
-    .catch(err => {
-      alert('Erro: ' + err.message);
     });
 }
 
@@ -97,6 +95,8 @@ function handleRegister(e) {
         return;
       }
 
+      const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
+
       const newUser = {
         username,
         password,
@@ -107,7 +107,9 @@ function handleRegister(e) {
         gamesPlayed: 0,
         xp: 0,
         level: 1,
+        iban: iban,
         transactions: [],
+        investments: [],
         achievements: [],
         createdAt: new Date().toISOString()
       };
@@ -115,11 +117,8 @@ function handleRegister(e) {
       db.ref('users/' + username).set(newUser)
         .then(() => {
           localStorage.setItem('currentUser', username);
-          showToast('Conta criada! +100 OSD de boas-vindas!');
+          showToast('Conta criada! +100 OSD!');
           loadDashboard(username);
-        })
-        .catch(err => {
-          alert('Erro: ' + err.message);
         });
     });
 }
