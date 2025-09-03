@@ -25,6 +25,7 @@
       console.log('Firebase inicializado com sucesso');
     } catch (error) {
       console.error('Erro ao inicializar Firebase:', error.message);
+      document.getElementById('toast') && showToast('Erro ao inicializar Firebase: ' + error.message);
     }
   </script>
 </head>
