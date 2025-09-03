@@ -102,6 +102,59 @@ function signup() {
     });
 }
 
+function googleSignIn() {
+  console.log('Iniciando login/cadastro com Google');
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then(result => {
+      const user = result.user;
+      const username = user.email.split('@')[0] || `google_user_${Date.now()}`;
+      console.log('Usuário Google autenticado, UID:', user.uid);
+
+      firebase.database().ref('users').orderByChild('username').equalTo(username).once('value')
+        .then(snapshot => {
+          if (!snapshot.exists()) {
+            const iban = `OSPT${Math.random().toString().slice(2, 18)}`;
+            console.log('IBAN gerado para Google user:', iban);
+            return firebase.database().ref('users/' + user.uid).set({
+              username,
+              email: user.email,
+              iban,
+              balance: 1000,
+              gameBalance: 0,
+              helpsUsed: 0
+            });
+          }
+        })
+        .then(() => {
+          showToast('Login com Google bem-sucedido!');
+          console.log('Dados do usuário Google salvos ou já existentes');
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+          loadDashboard(user.uid);
+        })
+        .catch(error => {
+          showToast('Erro ao salvar dados do Google: ' + error.message);
+          console.error('Erro ao salvar dados do Google:', error.message);
+        });
+    })
+    .catch(error => {
+      let errorMessage = 'Erro no login com Google: ';
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          errorMessage += 'Popup fechado pelo usuário!';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage += 'Falha de rede. Verifique sua conexão!';
+          break;
+        default:
+          errorMessage += error.message;
+      }
+      showToast(errorMessage);
+      console.error('Erro no Google Sign-In:', error.code, error.message);
+    });
+}
+
 function login() {
   console.log('Iniciando processo de login');
   const username = document.getElementById('username').value.trim();
