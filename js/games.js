@@ -4,22 +4,50 @@ let helpsUsed = 0;
 const questions = [
   { question: "Quem pintou a Mona Lisa?", answers: ["Leonardo da Vinci", "Michelangelo", "Rafael", "Donatello"], correct: 0, category: "Arte" },
   { question: "Qual é a capital do Brasil?", answers: ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"], correct: 2, category: "Geografia" },
-  // Adicione mais 698 perguntas
+  // Adicione mais perguntas conforme necessário
 ];
 
-function showGame() {
-  document.querySelectorAll('.container > div').forEach(div => div.style.display = 'none');
-  document.getElementById('game-screen').style.display = 'block';
+function showGameScreen() {
+  console.log('Exibindo tela de jogo');
+  const user = getCurrentUser();
+  if (!user) {
+    showToast('Você precisa estar logado.');
+    console.error('Erro: Usuário não logado');
+    showLoginScreen();
+    return;
+  }
+  const app = document.getElementById('app');
+  if (!app) {
+    console.error('Elemento #app não encontrado');
+    return;
+  }
+  app.innerHTML = `
+    <div class="container">
+      <div class="header">
+        <h2>Jogo de Perguntas</h2>
+      </div>
+      <div class="card">
+        <p class="text-lg mb-4" id="question"></p>
+        <div id="answers" class="space-y-2"></div>
+        <button onclick="useHelp()" id="help-btn" class="btn btn-secondary mt-3">Ver Percentagens (${helpsUsed}/3)</button>
+        <button onclick="generateCode()" id="generate-code-btn" class="btn btn-primary mt-3" style="display: none;">Gerar Código de Resgate</button>
+      </div>
+      <button onclick="loadDashboard('${user.uid}')" class="btn btn-ghost mt-4">Voltar</button>
+    </div>
+  `;
   loadQuestion();
+  setTimeout(() => lucide.createIcons(), 100);
 }
 
 function loadQuestion() {
+  console.log('Carregando pergunta:', currentQuestion);
   const q = questions[currentQuestion];
   document.getElementById('question').textContent = q.question;
   const answersDiv = document.getElementById('answers');
   answersDiv.innerHTML = '';
   q.answers.forEach((answer, i) => {
     const btn = document.createElement('button');
+    btn.className = 'btn btn-secondary w-full';
     btn.textContent = answer;
     btn.onclick = () => checkAnswer(i);
     answersDiv.appendChild(btn);
@@ -28,27 +56,37 @@ function loadQuestion() {
 }
 
 function checkAnswer(index) {
+  console.log('Verificando resposta:', index);
   const q = questions[currentQuestion];
   const value = Math.floor(Math.random() * 46) + 5;
+  const user = getCurrentUser();
   if (index === q.correct) {
     gameBalance += value;
-    showToast('🎉 Resposta correta! +' + value + ' OSD');
+    showToast(`🎉 Resposta correta! +${value} FIT$`);
+    console.log('Resposta correta, ganho:', value);
+    addAchievement(user.uid, 'Resposta Certa', `Ganhou ${value} FIT$ no jogo!`);
   } else {
     showToast('😢 Resposta errada!');
+    console.error('Resposta errada');
   }
   currentQuestion++;
   if (currentQuestion >= questions.length) {
-    showToast(`Fim do jogo! Total ganho: ${gameBalance} OSD`);
+    showToast(`Fim do jogo! Total ganho: ${gameBalance} FIT$`);
+    console.log('Fim do jogo, total ganho:', gameBalance);
     document.getElementById('generate-code-btn').style.display = 'block';
-    firebase.database().ref(`users/${firebase.auth().currentUser.uid}`).update({ gameBalance });
+    firebase.database().ref('users/' + user.uid).update({ balance: user.balance + gameBalance });
+    addTransaction(user.uid, 'deposit', gameBalance, 'Jogo');
   } else {
     loadQuestion();
   }
 }
 
 function useHelp() {
+  console.log('Usando ajuda, total usado:', helpsUsed);
+  const user = getCurrentUser();
   if (helpsUsed >= 3) {
     showToast('Limite de ajudas atingido!');
+    console.error('Erro: Limite de ajudas atingido');
     return;
   }
   helpsUsed++;
@@ -57,57 +95,27 @@ function useHelp() {
     document.getElementById('answers').children[i].textContent += ` (${percentages[i]}%)`;
   });
   document.getElementById('help-btn').textContent = `Ver Percentagens (${helpsUsed}/3)`;
-  firebase.database().ref(`users/${firebase.auth().currentUser.uid}`).update({ helpsUsed });
+  firebase.database().ref('users/' + user.uid).update({ helpsUsed });
 }
 
 function generateCode() {
-  const uid = firebase.auth().currentUser.uid;
-  firebase.database().ref(`users/${uid}`).once('value').then(snapshot => {
-    const username = snapshot.val().username;
-    const code = `OSD-${username}-${Date.now()}`;
-    firebase.database().ref('redemption_codes').child(code).set({
-      value: gameBalance,
-      userId: uid,
-      used: false
-    }).then(() => {
-      navigator.clipboard.writeText(code);
-      showToast('Código copiado!');
-      firebase.database().ref(`users/${uid}`).update({ gameBalance: 0 });
-      gameBalance = 0;
-      currentQuestion = 0;
-      backToDashboard();
-    });
-  });
-}
-
-function showRedeem() {
-  document.querySelectorAll('.container > div').forEach(div => div.style.display = 'none');
-  document.getElementById('redeem-screen').style.display = 'block';
-}
-
-function redeemCode() {
-  const code = document.getElementById('redeem-code').value;
-  const uid = firebase.auth().currentUser.uid;
-  firebase.database().ref('redemption_codes').child(code).once('value', snapshot => {
-    if (!snapshot.exists() || snapshot.val().used || snapshot.val().userId !== uid) {
-      showToast('Código inválido ou já usado!');
-      return;
-    }
-    const value = snapshot.val().value;
-    firebase.database().ref(`users/${uid}`).once('value').then(userSnapshot => {
-      const balance = userSnapshot.val().balance;
-      firebase.database().ref(`users/${uid}`).update({ balance: balance + value });
-      firebase.database().ref('redemption_codes').child(code).update({ used: true });
-      firebase.database().ref(`transactions/${uid}`).push({
-        type: 'deposit',
-        amount: value,
-        date: Date.now()
-      });
-      showToast(`Código resgatado! +${value} OSD`);
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`Código resgatado! +${value} OSD`);
-      }
-      backToDashboard();
-    });
+  console.log('Gerando código de resgate');
+  const user = getCurrentUser();
+  const code = `FIT-${user.username}-${Date.now()}`;
+  firebase.database().ref('redemption_codes').child(code).set({
+    value: gameBalance,
+    userId: user.uid,
+    used: false
+  }).then(() => {
+    navigator.clipboard.writeText(code);
+    showToast('Código copiado!');
+    console.log('Código gerado e copiado:', code);
+    gameBalance = 0;
+    currentQuestion = 0;
+    helpsUsed = 0;
+    loadDashboard(user.uid);
+  }).catch(err => {
+    showToast('Erro ao gerar código: ' + err.message);
+    console.error('Erro ao gerar código:', err.message);
   });
 }
