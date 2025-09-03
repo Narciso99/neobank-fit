@@ -1,7 +1,7 @@
 /**
  * main.js - NeoBank OS
  * Ponto de entrada do app
- * Garante que o DOM está pronto antes de carregar a tela
+ * Garante que tudo carregue corretamente com Firebase via CDN
  */
 
 // Cria o botão flutuante de tema (claro/escuro)
@@ -13,8 +13,8 @@ function createThemeToggle() {
   toggle.id = 'theme-toggle';
   toggle.innerHTML = '<i data-lucide="sun" class="w-6 h-6"></i>';
   toggle.setAttribute('title', 'Alternar Modo Escuro');
-  
-  // Estilo do botão
+
+  // Estilo do botão flutuante
   toggle.style.cssText = `
     position: fixed;
     bottom: 24px;
@@ -57,7 +57,6 @@ function createThemeToggle() {
     const icon = toggle.querySelector('i');
     const isDark = document.documentElement.classList.contains('dark');
     icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
-    // Atualiza ícones
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
@@ -67,14 +66,14 @@ function createThemeToggle() {
 
   document.body.appendChild(toggle);
 
-  // Inicializa o ícone correto com base na preferência salva
+  // Define ícone inicial com base no tema
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     document.documentElement.classList.add('dark');
     toggle.querySelector('i').setAttribute('data-lucide', 'moon');
   }
 
-  // Inicializa os ícones do Lucide
+  // Inicializa os ícones
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
@@ -106,14 +105,12 @@ if ('Notification' in window && Notification.permission === 'default') {
 
 // Quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  // Cria o botão de tema
   createThemeToggle();
 
-  // Verifica se há usuário logado
   const currentUser = localStorage.getItem('currentUser');
 
   if (currentUser) {
-    // Verifica no Firebase se o usuário existe
+    // Verifica se o usuário existe no Firebase
     db.ref('users/' + currentUser).once('value')
       .then(snapshot => {
         if (snapshot.exists()) {
@@ -124,15 +121,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
       .catch(err => {
-        console.error('Erro ao verificar usuário:', err);
-        showToast('Erro ao carregar dados. Tente novamente.');
+        console.error('Erro ao carregar usuário:', err);
+        showToast('Erro ao conectar ao banco de dados.');
         showLoginScreen();
       });
   } else {
     showLoginScreen();
   }
 
-  // Inicializa ícones do Lucide (com atraso para garantir)
+  // Inicializa ícones do Lucide
   setTimeout(() => {
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
