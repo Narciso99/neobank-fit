@@ -137,7 +137,7 @@ function invest(fundId, minAmount, fundName) {
       return balance; // Silently prevent
     }
   }).then(result => {
-    if (result.committed && result.snapshot.val() !== result.snapshot.val() + amount) {
+    if (result.committed && result.snapshot.val() !== result.snapshot.val() + amount) { // Check if deduction happened
       showToast(`✅ Investimento de ${amount.toFixed(2)} OSD em ${fundName} realizado!`);
 
       // Save investment record with start time
@@ -156,7 +156,7 @@ function invest(fundId, minAmount, fundName) {
 
 function getReturnRates() {
   return {
-    1: { min: -0.04, max: 0.12 },
+    1: { min: -0.04, max: 0.12 }, // Allow losses
     2: { min: -0.01, max: 0.05 },
     3: { min: -0.15, max: 0.20 },
     4: { min: -0.03, max: 0.08 },
@@ -188,7 +188,7 @@ function updateInvestmentReturns(username) {
           const rateRange = rates[inv.fundId] || { min: -0.05, max: 0.10 };
           let gain = 0;
           for (let i = 0; i < minutesPassed; i++) {
-            const minuteRate = (rateRange.min + Math.random() * (rateRange.max - rateRange.min)) / (30 * 24 * 60);
+            const minuteRate = (rateRange.min + Math.random() * (rateRange.max - rateRange.min)) / (30 * 24 * 60); // Minute rate (assuming monthly base)
             gain += inv.amount * minuteRate;
           }
           totalGain += gain;
@@ -206,6 +206,7 @@ function updateInvestmentReturns(username) {
       if (totalGain !== 0) {
         updateUserBalance(username, totalGain);
         showToast(`${totalGain > 0 ? '💰 +' : '📉 '}${totalGain.toFixed(2)} OSD de retornos em investimentos!`);
+        // Update balance display if on screen
         const balanceDisplay = document.getElementById('balance-display');
         if (balanceDisplay) {
           db.ref('users/' + username + '/balance').once('value').then(snap => {
@@ -368,5 +369,4 @@ function calculateCompound() {
     Valor Final: ${amount.toFixed(2)} OSD<br>
     Juros Ganho: ${interest.toFixed(2)} OSD
   `;
-  showToast(`✅ Cálculo concluído: Juros de ${interest.toFixed(2)} OSD!`);
 }
