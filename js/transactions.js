@@ -1,69 +1,82 @@
-/**
- * transactions.js - NeoBank OS
- * Gerencia transações de depósito e saque
- */
+// transactions.js
+function showTransactionModal(type) {
+  const user = getCurrentUser();
+  if (!user) return;
 
-function processTransaction(type, username, amount, callback) {
-  if (!amount || amount <= 0) {
-    showToast('❌ Digite um valor válido.');
-    callback(false);
-    return;
-  }
+  const modalHTML = {
+    withdraw: `
+      <h3>Sacar OSD</h3>
+      <input type="number" id="amount" placeholder="50" class="w-full p-3 border rounded-xl my-3" />
+      <button onclick="confirmTransaction('withdraw')" class="btn btn-primary w-full">Sacar</button>
+    `,
+    transfer: `
+      <h3>Transferir via IBAN</h3>
+      <input type="text" id="iban" placeholder="OSPT1234567890123456" class="w-full p-3 border rounded-xl my-2" />
+      <input type="number" id="amount" placeholder="100" class="w-full p-3 border rounded-xl my-2" />
+      <button onclick="confirmTransaction('transfer')" class="btn btn-primary w-full">Enviar</button>
+    `
+  }[type];
 
-  if (type === 'withdraw') {
-    db.ref('users/' + username + '/balance').once('value')
-      .then(snapshot => {
-        const balance = snapshot.val() || 0;
-        if (balance < amount) {
-          showToast('❌ Saldo insuficiente.');
-          callback(false);
-          return;
-        }
-        updateUserBalance(username, -amount);
-        addTransaction(username, 'withdraw', amount);
-        showToast(`✅ Saque de ${amount.toFixed(2)} OSD realizado!`);
-        callback(true);
-      })
-      .catch(err => {
-        console.error('Erro ao verificar saldo:', err);
-        showToast('❌ Erro ao processar saque: ' + err.message);
-        callback(false);
-      });
-  } else {
-    updateUserBalance(username, amount);
-    addTransaction(username, 'deposit', amount);
-    showToast(`✅ Depósito de ${amount.toFixed(2)} OSD realizado!`);
-    callback(true);
-  }
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="container">
+      <div class="card">${modalHTML}</div>
+      <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost mt-3">Voltar</button>
+    </div>
+  `;
+  setTimeout(() => lucide.createIcons(), 100);
 }
 
-function updateUserBalance(username, amount) {
-  const ref = db.ref('users/' + username);
-  ref.transaction(user => {
-    if (user) {
-      user.balance = (user.balance || 0) + amount;
-      user.xp = (user.xp || 0) + Math.abs(amount) * 0.1;
-      user.level = Math.floor(user.xp / 100) + 1;
-    }
-    return user;
-  }).catch(err => {
-    console.error('Erro ao atualizar saldo:', err);
-    showToast('❌ Erro ao atualizar saldo: ' + err.message);
-  });
-}
+function confirmTransaction(type) {
+  const user = getCurrentUser();
+  const amount = parseFloat(document.getElementById('amount').value);
 
-function addTransaction(username, type, amount, target = null) {
-  const transaction = {
-    id: Date.now(),
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().split(' ')[0],
-    type,
-    amount,
-    target
-  };
-  db.ref('users/' + username + '/transactions').push(transaction)
-    .catch(err => {
-      console.error('Erro ao adicionar transação:', err);
-      showToast('❌ Erro ao adicionar transação: ' + err.message);
-    });
+  if (!amount || amount <= 0) return alert('Valor inválido.');
+
+  switch (type) {
+    case 'withdraw':
+      db.ref('users/' + user.username).once('value')
+        .then(snap => {
+          if (snap.val().balance < amount) {
+            alert('Saldo insuficiente.');
+            return;
+          }
+          updateUserBalance(user.username, -amount);
+          addTransaction(user.username, 'withdraw', amount);
+          showToast(`-${amount} OSD sacado!`);
+        });
+      break;
+
+    case 'transfer':
+      const iban = document.getElementById('iban').value.trim();
+      if (!iban.startsWith('OSPT') || iban.length !== 22) {
+        alert('IBAN inválido.');
+        return;
+      }
+
+      db.ref('users').orderByChild('iban').equalTo(iban).once('value')
+        .then(snapshot => {
+          if (snapshot.exists()) {
+            snapshot.forEach(child => {
+              const target = child.key;
+              db.ref('users/' + user.username).once('value')
+                .then(userSnap => {
+                  if (userSnap.val().balance < amount) {
+                    alert('Saldo insuficiente.');
+                    return;
+                  }
+                  updateUserBalance(user.username, -amount);
+                  updateUserBalance(target, amount);
+                  addTransaction(user.username, 'transfer_out', amount, target);
+                  addTransaction(target, 'transfer_in', amount, user.username);
+                  showToast(`${amount} OSD enviado!`);
+                  setTimeout(() => loadDashboard(user.username), 1000);
+                });
+            });
+          } else {
+            alert('IBAN não encontrado.');
+          }
+        });
+      break;
+  }
 }
