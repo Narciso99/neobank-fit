@@ -6,10 +6,27 @@
   <title>NeoBank OS</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwa1oA6Pwk7idNq-Uu_nNfrasXMOhCrmk",
+      authDomain: "neobank-fit.firebaseapp.com",
+      databaseURL: "https://neobank-fit-default-rtdb.firebaseio.com",
+      projectId: "neobank-fit",
+      storageBucket: "neobank-fit.firebasestorage.app",
+      messagingSenderId: "1084469171756",
+      appId: "1:1084469171756:web:72696d6690053182752389"
+    };
+    try {
+      firebase.initializeApp(firebaseConfig);
+      console.log('Firebase inicializado com sucesso');
+    } catch (error) {
+      console.error('Erro ao inicializar Firebase:', error.message);
+    }
+  </script>
 </head>
 <body class="dark-mode">
   <div class="container">
@@ -85,7 +102,6 @@
         <option value="tech">Fundos de Tecnologia (Risco: Médio, Retorno: 8%)</option>
         <option value="crypto">Criptomoedas (Risco: Alto, Retorno: 15%)</option>
         <option value="gold">Ouro (Risco: Baixo, Retorno: 3%)</option>
-        <!-- Adicione mais opções conforme necessário -->
       </select>
       <input type="number" id="investment-amount" placeholder="Valor (OSD)">
       <button onclick="invest()">Investir</button>
@@ -117,8 +133,9 @@
   <script src="js/transactions.js"></script>
   <script src="js/pix.js"></script>
   <script src="js/card.js"></script>
+  <script src="js/achievements.js"></script>
   <script src="js/investments.js"></script>
-  <script src="js/games.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/games.js"></script>
 </body>
 </html>
