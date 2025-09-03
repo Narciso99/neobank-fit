@@ -1,4 +1,4 @@
-// main.js
+// main.js - Funções globais
 function createThemeToggle() {
   if (document.getElementById('theme-toggle')) return;
 
@@ -31,11 +31,15 @@ function showToast(msg) {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('NeoBank OS', { body: msg, icon: 'img/logo.svg' });
+  }
 }
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text)
-    .then(() => showToast('✅ Código copiado!'))
+    .then(() => showToast('✅ Copiado!'))
     .catch(err => alert('Falha ao copiar: ' + err.message));
 }
 
