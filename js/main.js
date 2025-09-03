@@ -8,7 +8,12 @@ const firebaseConfig = {
   appId: "1:1084469171756:web:72696d6690053182752389"
 };
 
-firebase.initializeApp(firebaseConfig);
+try {
+  firebase.initializeApp(firebaseConfig);
+  console.log('Firebase inicializado com sucesso');
+} catch (error) {
+  console.error('Erro ao inicializar Firebase:', error.message);
+}
 
 function showToast(message) {
   const toast = document.getElementById('toast');
