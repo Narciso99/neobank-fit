@@ -15,13 +15,12 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase SDK (compatível com CDN - ESSENCIAL para GitHub Pages) -->
+  <!-- Firebase SDK (compatível com CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <!-- Configuração do Firebase -->
   <script>
-    // Sua configuração do Firebase (copiada do console)
     const firebaseConfig = {
       apiKey: "AIzaSyCwa1oA6Pwk7idNq-Uu_nNfrasXMOhCrmk",
       authDomain: "neobank-fit.firebaseapp.com",
@@ -35,7 +34,7 @@
     // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // Cria uma referência ao Realtime Database
+    // Cria referência ao Realtime Database
     const db = firebase.database();
   </script>
 
@@ -45,7 +44,7 @@
   <!-- Manifest -->
   <link rel="manifest" href="manifest.json" />
 </head>
-<body class="font-sans h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-all duration-500">
+<body class="font-sans h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
 
   <!-- Container principal -->
   <div id="app" class="min-h-screen flex flex-col"></div>
