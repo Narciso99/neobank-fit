@@ -1,261 +1,318 @@
 /**
  * dashboard.js - NeoBank OS
- * Gerencia a tela principal do dashboard com suporte a notificações
+ * Tela principal com todas as funções integradas e funcionando
  */
 
+let currentUser = null;
+
+/**
+ * Carrega o dashboard com escuta em tempo real do Firebase
+ */
 function loadDashboard(username) {
-  const app = document.getElementById('app');
-  if (!app) {
-    console.error('Elemento #app não encontrado.');
-    showToast('❌ Erro interno: contêiner da aplicação não encontrado.');
-    showLoginScreen(); // Fallback to login if app container is missing
-    return;
-  }
+  currentUser = username;
 
-  // Clear previous content
-  app.innerHTML = '<div class="skeleton skeleton--card"></div>'; // Show skeleton loader
+  // Referência ao usuário no Firebase
+  const userRef = db.ref('users/' + username);
 
-  // Fetch user data from Firebase
-  db.ref('users/' + username).once('value')
-    .then(snapshot => {
-      if (!snapshot.exists()) {
-        console.error('Usuário não encontrado no Firebase:', username);
-        showToast('❌ Sessão inválida. Faça login novamente.');
-        localStorage.removeItem('currentUser');
-        showLoginScreen();
-        return;
-      }
+  // Escuta mudanças em tempo real
+  userRef.on('value', (snapshot) => {
+    const user = snapshot.val();
 
-      const userData = snapshot.val();
-      const balance = userData.balance || 0;
-      const xp = userData.xp || 0;
-      const level = userData.level || 1;
-      const avatar = userData.avatar || 'https://api.dicebear.com/9.x/thumbs/svg?seed=' + username;
-      const transactions = userData.transactions || {};
+    // Verifica se o usuário existe
+    if (!user) {
+      showToast('Usuário não encontrado.');
+      showLoginScreen();
+      return;
+    }
 
-      // Render dashboard
-      app.innerHTML = `
-        <div class="container">
-          <div class="header">
-            <h2>NeoBank OS</h2>
-          </div>
-          <div class="card text-center mb-4">
-            <img src="${avatar}" alt="Avatar" class="w-16 h-16 rounded-full mx-auto mb-2" />
-            <p class="text-lg font-semibold">${username}</p>
-            <p class="text-muted">Nível ${level} | ${xp} XP</p>
-            <p class="balance-display" id="balance-display">${balance.toFixed(2)} <span class="osd">OSD</span></p>
-          </div>
-          <div class="card">
-            <h3>Transferir</h3>
-            <div class="input-group">
-              <label for="transfer-to" class="field__label">Destinatário</label>
-              <input type="text" id="transfer-to" placeholder="Nome de usuário" class="input w-full" />
-            </div>
-            <div class="input-group">
-              <label for="transfer-amount" class="field__label">Valor (OSD)</label>
-              <input type="number" id="transfer-amount" placeholder="0.00" step="0.01" class="input w-full" />
-            </div>
-            <p id="transfer-error" class="field__error hidden"></p>
-            <button onclick="transfer('${username}')" class="btn btn--primary w-full mt-4">Transferir</button>
-          </div>
-          <div class="card">
-            <h3>Histórico de Transações</h3>
-            <div id="transaction-list" class="skeleton skeleton--text"></div>
-          </div>
-          <button onclick="receiveReward('${username}')" class="btn btn--success w-full mt-4">Receber Recompensa</button>
-          <button onclick="showInvestmentsScreen()" class="btn btn--ghost w-full mt-2">Investimentos</button>
-          <button onclick="logout()" class="btn btn--danger w-full mt-2">Sair</button>
-        </div>
-      `;
+    // Atualiza nível com base no XP
+    user.level = Math.floor((user.xp || 0) / 100) + 1;
 
-      // Render transactions
-      renderTransactions(transactions);
-      setTimeout(() => lucide.createIcons(), 100);
-      console.log('Dashboard carregado para:', username);
-    })
-    .catch(err => {
-      console.error('Erro ao carregar dados do usuário:', err);
-      showToast('❌ Erro ao carregar dashboard: ' + err.message);
-      app.innerHTML = '<div class="container"><div class="card text-center"><p class="text-muted">Erro ao carregar. Tente novamente.</p></div></div>';
-    });
-}
-
-function renderTransactions(transactions) {
-  const transactionList = document.getElementById('transaction-list');
-  if (!transactionList) {
-    console.error('Elemento #transaction-list não encontrado.');
-    showToast('❌ Erro ao carregar transações.');
-    return;
-  }
-
-  const transactionArray = Object.entries(transactions).map(([key, t]) => ({
-    key,
-    ...t,
-  }));
-
-  if (transactionArray.length === 0) {
-    transactionList.innerHTML = '<p class="text-muted text-center">Nenhum registro de transação.</p>';
-    return;
-  }
-
-  transactionList.innerHTML = transactionArray
-    .map(t => `
-      <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-        <div>
-          <p class="font-medium">${t.type === 'transfer' ? 'Transferência' : t.type === 'investment_gain' ? 'Retorno de Investimento' : 'Recompensa'}</p>
-          <p class="text-sm text-muted">${t.description}</p>
-          <p class="text-sm text-muted">${new Date(t.timestamp).toLocaleString()}</p>
-        </div>
-        <p class="${t.amount >= 0 ? 'badge badge--success' : 'badge badge--danger'}">
-          ${t.amount >= 0 ? '+' : ''}${t.amount.toFixed(2)} OSD
-        </p>
-      </div>
-    `)
-    .join('');
-}
-
-function transfer(username) {
-  const toInput = document.getElementById('transfer-to');
-  const amountInput = document.getElementById('transfer-amount');
-  const error = document.getElementById('transfer-error');
-  if (!toInput || !amountInput || !error) {
-    console.error('Elementos de transferência não encontrados.');
-    showToast('❌ Erro interno: formulário de transferência inválido.');
-    return;
-  }
-
-  const to = toInput.value.trim();
-  const amount = parseFloat(amountInput.value);
-
-  if (!to || !amount || amount <= 0) {
-    error.textContent = 'Preencha o destinatário e um valor válido.';
-    error.classList.remove('hidden');
-    showToast('❌ Preencha o destinatário e um valor válido.');
-    return;
-  }
-
-  error.classList.add('hidden');
-
-  // Check if recipient exists
-  db.ref('users/' + to).once('value')
-    .then(snapshot => {
-      if (!snapshot.exists()) {
-        error.textContent = 'Destinatário não encontrado.';
-        error.classList.remove('hidden');
-        showToast('❌ Destinatário não encontrado.');
-        return;
-      }
-
-      // Check sender's balance
-      db.ref('users/' + username + '/balance').once('value')
-        .then(snapshot => {
-          const balance = snapshot.val() || 0;
-          if (balance < amount) {
-            error.textContent = 'Saldo insuficiente.';
-            error.classList.remove('hidden');
-            showToast('❌ Saldo insuficiente.');
-            return;
-          }
-
-          // Perform transfer
-          db.ref('users/' + username + '/balance').transaction(balance => balance - amount)
-            .then(result => {
-              if (!result.committed) {
-                showToast('❌ Falha na transferência: saldo insuficiente.');
-                return;
-              }
-              db.ref('users/' + to + '/balance').transaction(balance => (balance || 0) + amount)
-                .then(() => {
-                  // Record transaction for sender
-                  addTransaction(username, 'transfer', -amount, `Transferência para ${to}`);
-                  // Record transaction for recipient
-                  addTransaction(to, 'transfer', amount, `Transferência de ${username}`);
-                  showToast(`✅ Transferência de ${amount.toFixed(2)} OSD para ${to} realizada!`);
-                  // Update balance display
-                  const balanceDisplay = document.getElementById('balance-display');
-                  if (balanceDisplay) {
-                    db.ref('users/' + username + '/balance').once('value').then(snap => {
-                      balanceDisplay.innerHTML = `${snap.val().toFixed(2)} <span class="osd">OSD</span>`;
-                    });
-                  }
-                })
-                .catch(err => {
-                  console.error('Erro ao processar transferência para destinatário:', err);
-                  showToast('❌ Erro ao processar transferência: ' + err.message);
-                });
-            })
-            .catch(err => {
-              console.error('Erro ao processar transferência:', err);
-              showToast('❌ Erro ao processar transferência: ' + err.message);
-            });
-        })
-        .catch(err => {
-          console.error('Erro ao verificar saldo:', err);
-          showToast('❌ Erro ao verificar saldo: ' + err.message);
-        });
-    })
-    .catch(err => {
-      console.error('Erro ao verificar destinatário:', err);
-      showToast('❌ Erro ao verificar destinatário: ' + err.message);
-    });
-}
-
-function addTransaction(username, type, amount, description) {
-  db.ref('users/' + username + '/transactions').push({
-    type,
-    amount,
-    description,
-    timestamp: Date.now(),
-  }).then(() => {
-    // Refresh transaction list
-    db.ref('users/' + username + '/transactions').once('value')
-      .then(snapshot => {
-        renderTransactions(snapshot.val() || {});
-      })
-      .catch(err => {
-        console.error('Erro ao atualizar transações:', err);
-        showToast('❌ Erro ao atualizar transações: ' + err.message);
-      });
-  }).catch(err => {
-    console.error('Erro ao registrar transação:', err);
-    showToast('❌ Erro ao registrar transação: ' + err.message);
+    // Renderiza a interface
+    renderDashboard(user, username);
+  }, (error) => {
+    console.error('Erro ao carregar dados do usuário:', error);
+    showToast('Erro ao carregar dados.');
   });
 }
 
-function receiveReward(username) {
-  const reward = 10 + Math.floor(Math.random() * 90); // Random reward between 10 and 100 OSD
-  db.ref('users/' + username + '/balance').transaction(balance => (balance || 0) + reward)
-    .then(result => {
-      if (!result.committed) {
-        showToast('❌ Falha ao receber recompensa.');
+/**
+ * Renderiza a interface completa do dashboard
+ */
+function renderDashboard(user, username) {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  // Gera lista de transações recentes
+  const transactions = Object.values(user.transactions || {}).slice(-5).reverse();
+  const transactionItems = transactions.length ? transactions.map(t => {
+    const icons = {
+      deposit: 'plus-circle text-green-500',
+      withdraw: 'minus-circle text-red-500',
+      pix_in: 'qr-code text-blue-500',
+      pix_out: 'qr-code text-orange-500',
+      investment_gain: 'trending-up text-purple-500'
+    }[t.type] || 'circle';
+
+    const label = {
+      deposit: `+${t.amount} OSD`,
+      withdraw: `-${t.amount} OSD`,
+      pix_in: `+${t.amount} (Pix) ← ${t.target}`,
+      pix_out: `-${t.amount} (Pix) → ${t.target}`,
+      investment_gain: `💰 +${t.amount.toFixed(2)} OSD de investimento`
+    }[t.type] || 'Transação';
+
+    return `
+      <li class="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700">
+        <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5 ${icons}"></i>
+        <div class="flex-1">
+          <p class="text-sm font-medium">${label}</p>
+          <p class="text-xs text-muted">${t.date}</p>
+        </div>
+      </li>
+    `;
+  }).join('') : '<li class="text-muted text-center py-2">Nenhuma transação</li>';
+
+  // HTML do Dashboard
+  app.innerHTML = `
+    <header class="header">
+      <div class="flex items-center gap-3">
+        <img src="${user.avatar}" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300 shadow-sm" />
+        <div>
+          <h2 class="text-lg">Olá, ${user.username}!</h2>
+          <p class="text-sm text-muted">Nível ${user.level}</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnHelp" title="Ajuda"><i data-lucide="help-circle" class="w-5 h-5"></i></button>
+        <button id="btnLogout" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <!-- Saldo Principal -->
+      <div class="card text-center">
+        <p class="text-muted">Saldo disponível</p>
+        <p class="balance-display">${user.balance.toFixed(2)} <span class="osd">OSD</span></p>
+      </div>
+
+      <!-- Ações Rápidas -->
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <button onclick="showTransactionModal('withdraw')" class="btn btn-secondary py-4">
+          <i data-lucide="minus-circle" class="w-5 h-5 mx-auto mb-1"></i>
+          <span class="text-sm">Sacar</span>
+        </button>
+        <button onclick="showPixScreen()" class="btn btn-secondary py-4">
+          <i data-lucide="qr-code" class="w-5 h-5 mx-auto mb-1"></i>
+          <span class="text-sm">Pix</span>
+        </button>
+        <button onclick="showCardScreen()" class="btn btn-secondary py-4">
+          <i data-lucide="credit-card" class="w-5 h-5 mx-auto mb-1"></i>
+          <span class="text-sm">Cartão</span>
+        </button>
+        <button onclick="showInvestmentsScreen()" class="btn btn-secondary py-4">
+          <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-1"></i>
+          <span class="text-sm">Investir</span>
+        </button>
+      </div>
+
+      <!-- Jogos e Resgate -->
+      <div class="card">
+        <h3 class="font-semibold mb-3">Ganhe OSD Jogando 🎮</h3>
+        <p class="text-sm text-muted mb-3">Jogue, ganhe OSD e resgate com código</p>
+        <button onclick="showGamesScreen()" class="btn btn-primary w-full mb-2">Jogar e Ganhar OSD</button>
+        <button onclick="showRedemptionModal('${username}')" class="btn btn-secondary w-full">Resgatar Código</button>
+      </div>
+
+      <!-- Histórico -->
+      <div class="card">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold">Últimas Transações</h3>
+          <button onclick="showFullTransactions('${username}')" class="text-primary text-sm">Ver tudo</button>
+        </div>
+        <ul id="transactionList" class="space-y-2">
+          ${transactionItems}
+        </ul>
+      </div>
+
+      <!-- Botão flutuante de tema -->
+      <button id="theme-toggle" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
+        <i data-lucide="sun" class="w-6 h-6"></i>
+      </button>
+
+    </main>
+  `;
+
+  // Inicializa ícones
+  setTimeout(() => lucide.createIcons(), 100);
+
+  // Eventos
+  document.getElementById('btnLogout').onclick = () => {
+    db.ref('users/' + currentUser).off(); // Para escuta
+    localStorage.removeItem('currentUser');
+    showToast('Até logo!');
+    setTimeout(showLoginScreen, 500);
+  };
+
+  document.getElementById('btnHelp').onclick = () => {
+    alert('NeoBank OS\n\nApp bancário fictício com jogos e investimentos.\n\nApenas para fins educativos.');
+  };
+
+  // Botão flutuante de tema
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.onclick = () => {
+      document.documentElement.classList.toggle('dark');
+      const icon = themeToggle.querySelector('i');
+      icon.setAttribute('data-lucide', document.documentElement.classList.contains('dark') ? 'moon' : 'sun');
+      lucide.createIcons();
+    };
+  }
+}
+
+/**
+ * Mostra modal para resgatar código
+ */
+function showRedemptionModal(username) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="container">
+      <div class="card">
+        <h3 class="text-xl font-bold mb-4">Resgatar Código de Jogo</h3>
+        <p class="text-sm text-muted mb-4">Digite o código gerado nos jogos para adicionar OSD à sua conta.</p>
+        <div class="input-group">
+          <label>Código de Resgate</label>
+          <input type="text" id="redeemCode" placeholder="OSD-ALICE-123456789" class="w-full p-3 rounded-xl border" />
+        </div>
+        <button onclick="redeemCode('${username}')" class="btn btn-primary w-full mt-3">Resgatar</button>
+        <button onclick="loadDashboard('${username}')" class="btn btn-ghost w-full mt-2">Voltar</button>
+      </div>
+    </div>
+  `;
+  setTimeout(() => lucide.createIcons(), 100);
+}
+
+/**
+ * Resgata um código de jogo
+ */
+function redeemCode(username) {
+  const codeInput = document.getElementById('redeemCode');
+  const code = codeInput ? codeInput.value.trim() : '';
+
+  if (!code) {
+    alert('Digite um código.');
+    return;
+  }
+
+  db.ref('redemption_codes/' + code).once('value')
+    .then(snapshot => {
+      const data = snapshot.val();
+      if (!data) {
+        alert('Código inválido.');
         return;
       }
-      db.ref('users/' + username + '/xp').transaction(xp => (xp || 0) + 10)
-        .then(() => {
-          addTransaction(username, 'reward', reward, 'Recompensa Diária');
-          showToast(`✅ Recompensa de ${reward.toFixed(2)} OSD recebida! +10 XP`);
-          // Update balance and XP display
-          const balanceDisplay = document.getElementById('balance-display');
-          if (balanceDisplay) {
-            db.ref('users/' + username + '/balance').once('value').then(snap => {
-              balanceDisplay.innerHTML = `${snap.val().toFixed(2)} <span class="osd">OSD</span>`;
-            });
-          }
-        })
-        .catch(err => {
-          console.error('Erro ao adicionar XP:', err);
-          showToast('❌ Erro ao adicionar XP: ' + err.message);
-        });
+      if (data.used) {
+        alert('Código já usado.');
+        return;
+      }
+      if (data.username !== username) {
+        alert('Este código não pertence a você.');
+        return;
+      }
+
+      // Atualiza saldo
+      updateUserBalance(username, data.amount);
+      addTransaction(username, 'deposit', data.amount, 'Código de Jogo');
+
+      // Marca como usado
+      db.ref('redemption_codes/' + code).update({ used: true });
+
+      showToast(`+${data.amount} OSD resgatados!`);
+      setTimeout(() => loadDashboard(username), 1000);
     })
     .catch(err => {
-      console.error('Erro ao receber recompensa:', err);
-      showToast('❌ Erro ao receber recompensa: ' + err.message);
+      alert('Erro: ' + err.message);
     });
 }
 
-function logout() {
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('theme');
-  showToast('✅ Sessão encerrada.');
-  showLoginScreen();
+/**
+ * Atualiza o saldo do usuário
+ */
+function updateUserBalance(username, amount) {
+  const ref = db.ref('users/' + username);
+  ref.transaction(user => {
+    if (user) {
+      user.balance = (user.balance || 0) + amount;
+      user.xp = (user.xp || 0) + Math.abs(amount) * 0.1;
+      user.level = Math.floor(user.xp / 100) + 1;
+    }
+    return user;
+  });
+}
+
+/**
+ * Adiciona transação
+ */
+function addTransaction(username, type, amount, target = null) {
+  const transaction = {
+    id: Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().split(' ')[0],
+    type,
+    amount,
+    target
+  };
+  db.ref('users/' + username + '/transactions').push(transaction);
+}
+
+/**
+ * Mostra todas as transações
+ */
+function showFullTransactions(username) {
+  db.ref('users/' + username).once('value').then(snapshot => {
+    const user = snapshot.val();
+    const allTrans = Object.values(user.transactions || {}).reverse();
+    const html = `
+      <div class="container">
+        <div class="header">
+          <h2>Todas as Transações</h2>
+        </div>
+        <div class="card">
+          ${allTrans.length ? allTrans.map(t => {
+            const icons = {
+              deposit: 'plus-circle text-green-500',
+              withdraw: 'minus-circle text-red-500',
+              pix_in: 'qr-code text-blue-500',
+              pix_out: 'qr-code text-orange-500',
+              investment_gain: 'trending-up text-purple-500'
+            }[t.type] || 'circle';
+
+            const label = {
+              deposit: `+${t.amount} OSD (Depósito)`,
+              withdraw: `-${t.amount} OSD (Saque)`,
+              pix_in: `+${t.amount} OSD (Pix recebido de ${t.target})`,
+              pix_out: `-${t.amount} OSD (Pix enviado para ${t.target})`,
+              investment_gain: `+${t.amount.toFixed(2)} OSD (Ganho de investimento)`
+            }[t.type] || 'Transação desconhecida';
+
+            return `
+              <div class="py-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3">
+                <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5 ${icons}"></i>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">${label}</p>
+                  <p class="text-xs text-muted">${t.date} - ${t.time}</p>
+                </div>
+              </div>
+            `;
+          }).join('') : '<p class="text-muted text-center py-4">Nenhuma transação encontrada</p>'}
+        </div>
+        <button onclick="loadDashboard('${username}')" class="btn btn-ghost mt-4 w-full">Voltar</button>
+      </div>
+    `;
+    document.getElementById('app').innerHTML = html;
+    setTimeout(() => lucide.createIcons(), 100);
+  }).catch(err => {
+    showToast('Erro ao carregar transações: ' + err.message);
+  });
 }
