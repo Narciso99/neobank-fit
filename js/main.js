@@ -1,6 +1,6 @@
 /**
  * main.js - NeoBank OS
- * Inicialização principal da aplicação
+ * Inicialização principal da aplicação com suporte a notificações
  */
 
 function createThemeToggle() {
@@ -42,6 +42,28 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
   } else {
     console.error('Toast element not found.');
+  }
+
+  // Show browser notification if permission granted
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('NeoBank OS', {
+      body: msg,
+      icon: 'https://api.dicebear.com/9.x/thumbs/svg?seed=neobank',
+    });
+  }
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        showToast('✅ Notificações ativadas!');
+      } else {
+        console.log('Permissão de notificação negada.');
+      }
+    }).catch(err => {
+      console.error('Erro ao solicitar permissão de notificação:', err);
+    });
   }
 }
 
@@ -212,6 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     document.documentElement.classList.remove('dark');
   }
+
+  // Request notification permission
+  requestNotificationPermission();
 
   // Inicializa elementos essenciais
   createThemeToggle();
