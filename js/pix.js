@@ -1,3 +1,4 @@
+// pix.js
 function showPixScreen() {
   const user = getCurrentUser();
   if (!user) return;
@@ -10,12 +11,12 @@ function showPixScreen() {
         <h2>Pix - NeoBank OS</h2>
       </div>
       <div class="card">
-        <h3 class="font-semibold">Sua Chave Pix</h3>
+        <h3>Sua Chave Pix</h3>
         <p class="text-primary mt-2">${user.username}@neobank.os</p>
         <button onclick="copyPixKey('${user.username}')" class="btn btn-secondary mt-3">Copiar Chave</button>
       </div>
       <div class="card">
-        <h3 class="font-semibold">Enviar Pix</h3>
+        <h3>Enviar Pix</h3>
         <div class="input-group">
           <label>Chave (usuário@neobank.os)</label>
           <input type="text" id="pixKey" placeholder="alice@neobank.os" class="w-full p-3 rounded-xl border" />
