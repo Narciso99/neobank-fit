@@ -1,176 +1,113 @@
 let currentUser = null;
 
-function loadDashboard(uid) {
-  console.log('Carregando dashboard para UID:', uid);
-  currentUser = uid;
-  const userRef = firebase.database().ref('users/' + uid);
+function loadDashboard(username) {
+  currentUser = username;
+  const userRef = db.ref('users/' + username);
+  
   userRef.on('value', snapshot => {
     const user = snapshot.val();
     if (!user) {
       showToast('Usuário não encontrado.');
-      console.error('Erro: Usuário não encontrado', uid);
-      localStorage.removeItem('currentUser');
       showLoginScreen();
       return;
     }
-    checkAchievements(user);
-    renderDashboard(user, uid);
+    user.level = Math.floor((user.xp || 0) / 100) + 1;
+    renderDashboard(user, username);
   });
 }
 
-function renderDashboard(user, uid) {
-  console.log('Renderizando dashboard para:', user.username);
+function renderDashboard(user, username) {
   const app = document.getElementById('app');
-  if (!app) {
-    console.error('Elemento #app não encontrado');
-    return;
-  }
+  if (!app) return;
+
+  const transactions = Object.values(user.transactions || {}).slice(-5).reverse();
+  const transactionItems = transactions.length ? transactions.map(t => {
+    const icons = {
+      deposit: 'plus-circle text-green-500',
+      withdraw: 'minus-circle text-red-500',
+      pix_in: 'qr-code text-blue-500',
+      pix_out: 'qr-code text-orange-500',
+      transfer_in: 'arrow-down-right text-purple-500',
+      transfer_out: 'arrow-up-right text-gray-500',
+      investment_gain: 'trending-up text-indigo-500'
+    }[t.type] || 'circle';
+
+    const label = {
+      deposit: `+${t.amount} OSD`,
+      withdraw: `-${t.amount} OSD`,
+      pix_in: `+${t.amount} (Pix) ← ${t.target}`,
+      pix_out: `-${t.amount} (Pix) → ${t.target}`,
+      transfer_in: `+${t.amount} (IBAN) ← ${t.target}`,
+      transfer_out: `-${t.amount} (IBAN) → ${t.target}`,
+      investment_gain: `💰 +${t.amount.toFixed(2)} OSD de investimento`
+    }[t.type] || t.type;
+
+    const amountClass = {
+      deposit: 'amount-positive',
+      pix_in: 'amount-positive',
+      transfer_in: 'amount-positive',
+      investment_gain: 'amount-investment',
+      withdraw: 'amount-negative',
+      pix_out: 'amount-negative',
+      transfer_out: 'amount-negative'
+    }[t.type] || 'amount-negative';
+
+    return `
+      <li class="transaction-item">
+        <div class="transaction-icon">
+          <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5"></i>
+        </div>
+        <div class="transaction-content">
+          <p class="transaction-label">${label}</p>
+          <p class="transaction-date">${t.date}</p>
+        </div>
+        <span class="transaction-amount ${amountClass}">${t.amount} OSD</span>
+      </li>
+    `;
+  }).join('') : '<li class="text-muted text-center py-2">Nenhuma transação</li>';
+
   app.innerHTML = `
     <header class="header">
       <div class="flex items-center gap-3">
-        <img src="${user.avatar}" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300" />
+        <img src="${user.avatar}" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-300 shadow-sm" />
         <div>
           <h2 class="text-lg">Olá, ${user.username}!</h2>
           <p class="text-sm text-muted">Nível ${user.level}</p>
         </div>
       </div>
       <div class="flex gap-2">
-        <button id="btnHelp" title="Ajuda"><i data-lucide="help-circle" class="w-5 h-5 text-primary"></i></button>
         <button id="btnLogout" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>
       </div>
     </header>
+
     <main class="container">
       <div class="card text-center">
         <p class="text-muted">Saldo disponível</p>
-        <p class="balance-display">${user.balance.toFixed(2)} FIT$</p>
+        <p class="balance-display">${user.balance.toFixed(2)} <span class="osd">OSD</span></p>
       </div>
+
       <div class="grid grid-cols-2 gap-3 mb-6">
-        <button onclick="showTransactionModal('deposit')" class="btn btn-secondary py-4">
-          <i data-lucide="plus-circle" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Depositar</span>
-        </button>
-        <button onclick="showTransactionModal('withdraw')" class="btn btn-secondary py-4">
-          <i data-lucide="minus-circle" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Sacar</span>
-        </button>
-        <button onclick="showPixScreen()" class="btn btn-secondary py-4">
-          <i data-lucide="qr-code" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Pix</span>
-        </button>
-        <button onclick="showCardScreen()" class="btn btn-secondary py-4">
-          <i data-lucide="credit-card" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Cartão</span>
-        </button>
-        <button onclick="showGameScreen()" class="btn btn-secondary py-4">
-          <i data-lucide="gamepad" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Jogar</span>
-        </button>
-        <button onclick="showInvestmentsScreen()" class="btn btn-secondary py-4">
-          <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-1"></i>
-          <span class="text-sm">Investir</span>
-        </button>
+        <button onclick="showTransactionModal('withdraw')" class="btn btn-secondary py-4">Sacar</button>
+        <button onclick="showTransactionModal('transfer')" class="btn btn-secondary py-4">Transferir</button>
+        <button onclick="showPixScreen()" class="btn btn-secondary py-4">Pix</button>
+        <button onclick="showInvestmentsScreen()" class="btn btn-secondary py-4">Investir</button>
       </div>
+
       <div class="card">
-        <h3 class="font-semibold mb-3">Últimas Transações</h3>
-        <ul id="transactionList" class="space-y-2"></ul>
+        <h3>IBAN</h3>
+        <p class="font-mono">${user.iban}</p>
       </div>
-      <div class="card">
-        <h3 class="font-semibold mb-3">Top 5 Saldo</h3>
-        <ol id="rankingList" class="space-y-1"></ol>
-      </div>
-      <button id="floatingHelp" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg">
-        <i data-lucide="message-circle" class="w-6 h-6"></i>
-      </button>
+
+      <button onclick="showGamesScreen()" class="btn btn-primary w-full mb-2">Jogar e Ganhar OSD</button>
     </main>
   `;
-  setTimeout(() => {
-    lucide.createIcons();
-    document.getElementById('btnLogout').onclick = () => {
-      console.log('Iniciando logout');
-      firebase.auth().signOut()
-        .then(() => {
-          firebase.database().ref('users/' + currentUser).off();
-          localStorage.removeItem('currentUser');
-          showLoginScreen();
-          console.log('Logout bem-sucedido');
-        })
-        .catch(error => {
-          showToast('Erro ao sair: ' + error.message);
-          console.error('Erro no logout:', error.code || 'N/A', error.message);
-        });
-    };
-    document.getElementById('btnHelp').onclick = () => {
-      showToast('NeoBank FIT - App de simulação bancária');
-    };
-    document.getElementById('floatingHelp').onclick = () => {
-      showToast('Suporte em breve!');
-    };
-    renderTransactions(user.transactions || {});
-    updateRanking();
-  }, 100);
-}
 
-function renderTransactions(transactions) {
-  console.log('Renderizando transações');
-  const list = document.getElementById('transactionList');
-  if (!list) {
-    console.error('Elemento #transactionList não encontrado');
-    return;
-  }
-  const transArray = Object.values(transactions).slice(-5).reverse();
-  list.innerHTML = transArray.length ? transArray.map(t => {
-    const icons = {
-      deposit: 'plus-circle text-green-500',
-      withdraw: 'minus-circle text-red-500',
-      pix_in: 'qr-code text-blue-500',
-      pix_out: 'qr-code text-orange-500',
-      transfer_in: 'arrow-down-circle text-blue-500',
-      transfer_out: 'arrow-up-circle text-orange-500',
-      investment: 'trending-up text-purple-500'
-    }[t.type] || 'circle';
-    const label = {
-      deposit: `+${t.amount} FIT$`,
-      withdraw: `-${t.amount} FIT$`,
-      pix_in: `+${t.amount} (Pix) ← ${t.target}`,
-      pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      transfer_in: `+${t.amount} (IBAN) ← ${t.target}`,
-      transfer_out: `-${t.amount} (IBAN) → ${t.target}`,
-      investment: `+${t.amount} (Investimento)`
-    }[t.type] || 'Transação';
-    return `
-      <li class="flex items-center gap-3 py-2 border-b">
-        <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5 ${icons}"></i>
-        <div class="flex-1">
-          <p class="text-sm font-medium">${label}</p>
-          <p class="text-xs text-muted">${t.date}</p>
-        </div>
-      </li>
-    `;
-  }).join('') : '<li class="text-muted text-center py-2">Sem transações</li>';
-  setTimeout(() => lucide.createIcons(), 100);
-}
+  document.getElementById('btnLogout').onclick = () => {
+    db.ref('users/' + currentUser).off();
+    localStorage.removeItem('currentUser');
+    showToast('Até logo!');
+    showLoginScreen();
+  };
 
-function updateRanking() {
-  console.log('Atualizando ranking');
-  const list = document.getElementById('rankingList');
-  if (!list) {
-    console.error('Elemento #rankingList não encontrado');
-    return;
-  }
-  firebase.database().ref('users').orderByChild('balance').limitToLast(5).once('value')
-    .then(snapshot => {
-      const users = [];
-      snapshot.forEach(child => users.push(child.val()));
-      users.reverse();
-      list.innerHTML = users.map((u, i) => `
-        <li class="flex justify-between py-1">
-          <span>${i+1}º ${u.username}</span>
-          <span class="font-medium">${u.balance.toFixed(2)} FIT$</span>
-        </li>
-      `).join('');
-    })
-    .catch(error => {
-      showToast('Erro ao carregar ranking: ' + error.message);
-      console.error('Erro ao carregar ranking:', error.message);
-    });
+  lucide.createIcons();
 }
