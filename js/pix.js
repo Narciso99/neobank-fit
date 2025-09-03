@@ -1,76 +1,48 @@
-// pix.js
-function showPixScreen() {
-  const user = getCurrentUser();
-  if (!user) return;
+/**
+ * pix.js - NeoBank OS
+ * Gerencia transações Pix
+ */
 
-  const app = document.getElementById('app');
-  if (!app) return;
-  app.innerHTML = `
-    <div class="container">
-      <div class="header">
-        <h2>Pix - NeoBank OS</h2>
-      </div>
-      <div class="card">
-        <h3>Sua Chave Pix</h3>
-        <p class="text-primary mt-2">${user.username}@neobank.os</p>
-        <button onclick="copyPixKey('${user.username}')" class="btn btn-secondary mt-3">Copiar Chave</button>
-      </div>
-      <div class="card">
-        <h3>Enviar Pix</h3>
-        <div class="input-group">
-          <label>Chave (usuário@neobank.os)</label>
-          <input type="text" id="pixKey" placeholder="alice@neobank.os" class="w-full p-3 rounded-xl border" />
-        </div>
-        <div class="input-group">
-          <label>Valor (OSD)</label>
-          <input type="number" id="pixAmount" placeholder="100" class="w-full p-3 rounded-xl border" />
-        </div>
-        <button onclick="sendPix()" class="btn btn-primary">Enviar Pix</button>
-      </div>
-      <button onclick="loadDashboard('${user.username}')" class="btn btn-ghost mt-4">Voltar</button>
-    </div>
-  `;
-  setTimeout(() => lucide.createIcons(), 100);
-}
-
-function copyPixKey(key) {
-  navigator.clipboard.writeText(key + '@neobank.os');
-  showToast('Chave Pix copiada!');
-}
-
-function sendPix() {
-  const keyInput = document.getElementById('pixKey');
-  const amountInput = document.getElementById('pixAmount');
-  if (!keyInput || !amountInput) return;
-
-  const key = keyInput.value.trim();
-  const username = key.replace('@neobank.os', '').trim();
-  const amount = parseFloat(amountInput.value);
-  const sender = getCurrentUser();
-
-  if (!username || !amount || amount <= 0) {
-    alert('Preencha todos os campos.');
+function processPix(username, target, amount, callback) {
+  if (!target || !amount || amount <= 0) {
+    showToast('❌ Preencha o destinatário e um valor válido.');
+    callback(false);
     return;
   }
 
-  db.ref('users/' + username).once('value').then(snap => {
-    if (!snap.exists()) {
-      alert('Usuário não encontrado.');
-      return;
-    }
-
-    db.ref('users/' + sender.username).once('value').then(userSnap => {
-      if (userSnap.val().balance < amount) {
-        alert('Saldo insuficiente.');
+  db.ref('users/' + target).once('value')
+    .then(snapshot => {
+      if (!snapshot.exists()) {
+        showToast('❌ Destinatário não encontrado.');
+        callback(false);
         return;
       }
 
-      updateUserBalance(sender.username, -amount);
-      updateUserBalance(username, amount);
-      addTransaction(sender.username, 'pix_out', amount, username);
-      addTransaction(username, 'pix_in', amount, sender.username);
-      showToast(`${amount} OSD enviado via Pix!`);
-      setTimeout(() => loadDashboard(sender.username), 1500);
+      db.ref('users/' + username + '/balance').once('value')
+        .then(snapshot => {
+          const balance = snapshot.val() || 0;
+          if (balance < amount) {
+            showToast('❌ Saldo insuficiente.');
+            callback(false);
+            return;
+          }
+
+          updateUserBalance(username, -amount);
+          updateUserBalance(target, amount);
+          addTransaction(username, 'pix_out', amount, target);
+          addTransaction(target, 'pix_in', amount, username);
+          showToast(`✅ Pix de ${amount.toFixed(2)} OSD enviado para ${target}!`);
+          callback(true);
+        })
+        .catch(err => {
+          console.error('Erro ao verificar saldo:', err);
+          showToast('❌ Erro ao verificar saldo: ' + err.message);
+          callback(false);
+        });
+    })
+    .catch(err => {
+      console.error('Erro ao verificar destinatário:', err);
+      showToast('❌ Erro ao verificar destinatário: ' + err.message);
+      callback(false);
     });
-  });
 }
