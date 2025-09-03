@@ -145,7 +145,7 @@ function renderDashboard(user, username) {
   `;
 
   // Inicializa ícones
-  setTimeout(() => lucide.createIcons(), 200);
+  setTimeout(() => lucide.createIcons(), 100);
 
   // Eventos
   document.getElementById('btnLogout').onclick = () => {
@@ -169,51 +169,6 @@ function renderDashboard(user, username) {
       lucide.createIcons();
     };
   }
-
-  // Inicializa o ícone inicial
-  lucide.createIcons();
-
-  // Renderiza transações
-  renderTransactions(user.transactions || []);
-}
-
-/**
- * Renderiza a lista de transações
- */
-function renderTransactions(transactions) {
-  const list = document.getElementById('transactionList');
-  if (!list) return;
-
-  const recent = Object.values(transactions || {}).slice(-5).reverse();
-  list.innerHTML = recent.length ? recent.map(t => {
-    const icons = {
-      deposit: 'plus-circle text-green-500',
-      withdraw: 'minus-circle text-red-500',
-      pix_in: 'qr-code text-blue-500',
-      pix_out: 'qr-code text-orange-500',
-      investment_gain: 'trending-up text-purple-500'
-    }[t.type] || 'circle';
-
-    const label = {
-      deposit: `+${t.amount} OSD`,
-      withdraw: `-${t.amount} OSD`,
-      pix_in: `+${t.amount} (Pix) ← ${t.target}`,
-      pix_out: `-${t.amount} (Pix) → ${t.target}`,
-      investment_gain: `💰 +${t.amount.toFixed(2)} OSD`
-    }[t.type] || 'Transação';
-
-    return `
-      <li class="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700">
-        <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5 ${icons}"></i>
-        <div class="flex-1">
-          <p class="text-sm font-medium">${label}</p>
-          <p class="text-xs text-muted">${t.date}</p>
-        </div>
-      </li>
-    `;
-  }).join('') : '<li class="text-muted text-center py-2">Nenhuma transação</li>';
-
-  setTimeout(() => lucide.createIcons(), 100);
 }
 
 /**
@@ -288,8 +243,8 @@ function updateUserBalance(username, amount) {
   const ref = db.ref('users/' + username);
   ref.transaction(user => {
     if (user) {
-      user.balance += amount;
-      user.xp = (user.xp || 0) + amount * 0.1;
+      user.balance = (user.balance || 0) + amount;
+      user.xp = (user.xp || 0) + Math.abs(amount) * 0.1;
       user.level = Math.floor(user.xp / 100) + 1;
     }
     return user;
@@ -324,17 +279,40 @@ function showFullTransactions(username) {
           <h2>Todas as Transações</h2>
         </div>
         <div class="card">
-          ${allTrans.length ? allTrans.map(t => `
-            <div class="py-2 border-b">
-              <p><strong>${t.type}:</strong> ${t.amount} OSD</p>
-              <p class="text-sm text-muted">${t.date} - ${t.time}</p>
-            </div>
-          `).join('') : '<p class="text-muted">Nenhuma transação</p>'}
+          ${allTrans.length ? allTrans.map(t => {
+            const icons = {
+              deposit: 'plus-circle text-green-500',
+              withdraw: 'minus-circle text-red-500',
+              pix_in: 'qr-code text-blue-500',
+              pix_out: 'qr-code text-orange-500',
+              investment_gain: 'trending-up text-purple-500'
+            }[t.type] || 'circle';
+
+            const label = {
+              deposit: `+${t.amount} OSD (Depósito)`,
+              withdraw: `-${t.amount} OSD (Saque)`,
+              pix_in: `+${t.amount} OSD (Pix recebido de ${t.target})`,
+              pix_out: `-${t.amount} OSD (Pix enviado para ${t.target})`,
+              investment_gain: `+${t.amount.toFixed(2)} OSD (Ganho de investimento)`
+            }[t.type] || 'Transação desconhecida';
+
+            return `
+              <div class="py-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3">
+                <i data-lucide="${icons.split(' ')[0]}" class="w-5 h-5 ${icons}"></i>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">${label}</p>
+                  <p class="text-xs text-muted">${t.date} - ${t.time}</p>
+                </div>
+              </div>
+            `;
+          }).join('') : '<p class="text-muted text-center py-4">Nenhuma transação encontrada</p>'}
         </div>
-        <button onclick="loadDashboard('${username}')" class="btn btn-ghost mt-4">Voltar</button>
+        <button onclick="loadDashboard('${username}')" class="btn btn-ghost mt-4 w-full">Voltar</button>
       </div>
     `;
     document.getElementById('app').innerHTML = html;
     setTimeout(() => lucide.createIcons(), 100);
+  }).catch(err => {
+    showToast('Erro ao carregar transações: ' + err.message);
   });
 }
