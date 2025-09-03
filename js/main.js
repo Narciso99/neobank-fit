@@ -12,10 +12,12 @@ function createThemeToggle() {
   toggle.className = 'fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform';
   
   toggle.onclick = () => {
-    document.documentElement.classList.toggle('dark');
+    const isDark = document.documentElement.classList.toggle('dark');
     const icon = toggle.querySelector('i');
-    icon.setAttribute('data-lucide', document.documentElement.classList.contains('dark') ? 'moon' : 'sun');
+    icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
     lucide.createIcons();
+    console.log(`Tema alterado para: ${isDark ? 'dark' : 'light'}`);
   };
 
   document.body.appendChild(toggle);
@@ -38,6 +40,8 @@ function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
+  } else {
+    console.error('Toast element not found.');
   }
 }
 
@@ -115,6 +119,14 @@ function getCurrentUser() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Apply saved theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+
   // Inicializa elementos essenciais
   createThemeToggle();
   createToastElement();
