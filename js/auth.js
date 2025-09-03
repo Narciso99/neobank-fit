@@ -2,63 +2,60 @@
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
-
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-green-600">NeoBank OS</h1>
+        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-green-500 to-blue-600 bg-clip-text text-transparent">NeoBank OS</h1>
       </div>
       <div class="card">
         <form id="loginForm" class="space-y-4">
           <div class="input-group">
             <label>Usuário</label>
-            <input type="text" name="username" required />
+            <input type="text" name="username" required class="w-full p-3 rounded-xl border" />
           </div>
           <div class="input-group">
             <label>Senha</label>
-            <input type="password" name="password" required />
+            <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
           </div>
           <button type="submit" class="btn btn-primary">Entrar</button>
-          <button type="button" id="btnRegister" class="btn btn-secondary">Criar Conta</button>
+          <button type="button" id="btnRegister" class="btn btn-secondary mt-2">Criar Conta</button>
         </form>
       </div>
     </div>
   `;
-
   document.getElementById('loginForm').onsubmit = handleLogin;
   document.getElementById('btnRegister').onclick = showRegisterScreen;
-  lucide.createIcons();
+  setTimeout(() => lucide.createIcons(), 100);
 }
 
 function showRegisterScreen() {
   const app = document.getElementById('app');
   if (!app) return;
-
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-green-600">Criar Conta</h1>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-green-500 to-blue-600 bg-clip-text text-transparent">Criar Conta</h1>
       </div>
       <div class="card">
         <form id="registerForm" class="space-y-4">
           <div class="input-group">
             <label>Nome</label>
-            <input type="text" name="username" required />
+            <input type="text" name="username" required class="w-full p-3 rounded-xl border" />
           </div>
           <div class="input-group">
             <label>Senha</label>
-            <input type="password" name="password" required />
+            <input type="password" name="password" required class="w-full p-3 rounded-xl border" />
           </div>
           <button type="submit" class="btn btn-primary">Registrar</button>
-          <button type="button" id="btnBack" class="btn btn-secondary">Voltar</button>
+          <button type="button" id="btnBack" class="btn btn-secondary mt-2">Voltar</button>
         </form>
       </div>
     </div>
   `;
-
   document.getElementById('registerForm').onsubmit = handleRegister;
   document.getElementById('btnBack').onclick = showLoginScreen;
-  lucide.createIcons();
+  setTimeout(() => lucide.createIcons(), 100);
 }
 
 function handleLogin(e) {
@@ -76,10 +73,6 @@ function handleLogin(e) {
       } else {
         alert('Usuário ou senha incorretos.');
       }
-    })
-    .catch(err => {
-      console.error('Erro ao fazer login:', err);
-      alert('Erro ao fazer login. Tente novamente.');
     });
 }
 
@@ -96,6 +89,7 @@ function handleRegister(e) {
       }
 
       const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
+      const email = `${username}@neobank.com`;
 
       const newUser = {
         username,
@@ -108,8 +102,10 @@ function handleRegister(e) {
         xp: 0,
         level: 1,
         iban: iban,
+        email: email,
         transactions: [],
         investments: [],
+        achievements: [],
         createdAt: new Date().toISOString()
       };
 
@@ -118,10 +114,6 @@ function handleRegister(e) {
           localStorage.setItem('currentUser', username);
           showToast('Conta criada! +100 OSD!');
           loadDashboard(username);
-        })
-        .catch(err => {
-          console.error('Erro ao criar conta:', err);
-          alert('Erro ao criar conta.');
         });
     });
 }
