@@ -1,122 +1,179 @@
 .container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px;
   width: 100%;
+  background: linear-gradient(135deg, rgba(10, 31, 62, 0.1), rgba(0, 83, 166, 0.1));
+  border-radius: 20px;
 }
 
 .card {
-  background: white;
-  border: 1px solid #d0e0ff;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.08);
+  background: linear-gradient(145deg, #ffffff, #e6f0ff);
+  border: 1px solid #00aaff;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 83, 166, 0.15), 0 0 16px rgba(0, 170, 255, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 83, 166, 0.25), 0 0 20px rgba(0, 170, 255, 0.3);
 }
 
 body.dark .card {
-  background: #0a1f3e;
-  border-color: #2a3b60;
+  background: linear-gradient(145deg, #0a1f3e, #1a3366);
+  border-color: #00d4ff;
+  box-shadow: 0 8px 24px rgba(0, 83, 166, 0.3), 0 0 16px rgba(0, 212, 255, 0.4);
 }
 
 .btn {
   display: block;
   width: 100%;
-  padding: 14px;
-  border-radius: 14px;
-  font-weight: 600;
+  padding: 16px;
+  border-radius: 16px;
+  font-weight: 700;
   text-align: center;
   border: none;
   cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(0, 170, 255, 0.5);
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #003366, #0055cc);
-  color: white;
+  background: linear-gradient(90deg, #0055cc, #00aaff);
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #0077ff, #00d4ff);
 }
 
 .btn-secondary {
-  background: #e6f0ff;
-  color: #003366;
+  background: linear-gradient(90deg, #e6f0ff, #b3d4ff);
+  color: #002244;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(90deg, #b3d4ff, #80b3ff);
 }
 
 .btn-ghost {
   background: transparent;
-  color: #0055cc;
-  border: 1px solid #0055cc;
+  color: #00aaff;
+  border: 2px solid #00aaff;
+  box-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
+}
+
+.btn-ghost:hover {
+  background: rgba(0, 170, 255, 0.1);
+  color: #00d4ff;
+  border-color: #00d4ff;
 }
 
 .header {
-  padding: 16px 0;
-  border-bottom: 1px solid #d0e0ff;
-  margin-bottom: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid #00aaff;
+  margin-bottom: 24px;
+  background: linear-gradient(180deg, rgba(0, 83, 166, 0.1), transparent);
 }
 
 body.dark .header {
-  border-color: #2a3b60;
+  border-color: #00d4ff;
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.2), transparent);
 }
 
 .balance-display {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #003366;
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #0033aa;
   text-align: center;
-  margin: 10px 0;
+  margin: 12px 0;
+  text-shadow: 0 0 12px rgba(0, 170, 255, 0.5);
 }
 
 body.dark .balance-display {
-  color: #00a0ff;
+  color: #00d4ff;
+  text-shadow: 0 0 16px rgba(0, 212, 255, 0.7);
 }
 
 .osd {
-  font-size: 0.7em;
-  color: #5a6e85;
+  font-size: 0.8em;
+  color: #6699cc;
+  text-shadow: 0 0 4px rgba(102, 153, 204, 0.3);
 }
 
 .input-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .input-group label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 0.9rem;
-  color: #333;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: #002244;
+  font-weight: 600;
 }
 
 .input-group input,
 .input-group select {
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  font-size: 1rem;
-  background: white;
+  padding: 14px 16px;
+  border: 1px solid #00aaff;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  background: linear-gradient(145deg, #ffffff, #f0f8ff);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 12px rgba(0, 170, 255, 0.4);
 }
 
 body.dark .input-group input,
 body.dark .input-group select {
-  background: #00264d;
-  border-color: #0055cc;
-  color: white;
+  background: linear-gradient(145deg, #00264d, #003366);
+  border-color: #00d4ff;
+  color: #e6f0ff;
+}
+
+body.dark .input-group input:focus,
+body.dark .input-group select:focus {
+  border-color: #00e6ff;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+}
+
+body.dark .input-group label {
+  color: #b3d4ff;
 }
 
 .toast {
   position: fixed;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: #003366;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  font-size: 0.9rem;
+  background: linear-gradient(90deg, #0033aa, #00aaff);
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 83, 166, 0.3), 0 0 16px rgba(0, 170, 255, 0.4);
+  font-size: 1rem;
   z-index: 1000;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .toast.show {
   opacity: 1;
+  transform: translateX(-50%) translateY(-8px);
 }
