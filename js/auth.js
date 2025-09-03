@@ -5,12 +5,8 @@ function showLoginScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3 glow" />
-        <h1 class="text-3xl font-bold gradient-text">NeoBank OS</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">Jogue, ganhe OSD e invista!</p>
-      </div>
-      <div class="flex justify-center mb-6">
-        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200 shadow-sm" />
+        <img src="img/logo.svg" alt="NeoBank OS" class="w-16 h-16 mx-auto mb-3" />
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">NeoBank OS</h1>
       </div>
       <div class="card">
         <form id="loginForm" class="space-y-4">
@@ -39,10 +35,7 @@ function showRegisterScreen() {
   app.innerHTML = `
     <div class="container">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold gradient-text">Criar Conta</h1>
-      </div>
-      <div class="flex justify-center mb-6">
-        <img src="img/avatar-default.png" alt="Avatar" class="w-16 h-16 rounded-full border-4 border-blue-200" />
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Criar Conta</h1>
       </div>
       <div class="card">
         <form id="registerForm" class="space-y-4">
@@ -75,7 +68,7 @@ function handleLogin(e) {
       const user = snapshot.val();
       if (user && user.password === password) {
         localStorage.setItem('currentUser', username);
-        showToast('Bem-vindo(a)!');
+        showToast('Bem-vindo!');
         loadDashboard(username);
       } else {
         alert('Usuário ou senha incorretos.');
@@ -95,6 +88,7 @@ function handleRegister(e) {
         return;
       }
 
+      // Gera IBAN único fixo
       const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
 
       const newUser = {
