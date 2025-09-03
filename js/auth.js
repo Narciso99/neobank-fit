@@ -1,3 +1,4 @@
+// auth.js
 function showLoginScreen() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -19,12 +20,14 @@ function showLoginScreen() {
           </div>
           <button type="submit" class="btn btn-primary">Entrar</button>
           <button type="button" id="btnRegister" class="btn btn-secondary mt-2">Criar Conta</button>
+          <button type="button" id="btnRecover" class="btn btn-ghost mt-2">Recuperar Senha</button>
         </form>
       </div>
     </div>
   `;
   document.getElementById('loginForm').onsubmit = handleLogin;
   document.getElementById('btnRegister').onclick = showRegisterScreen;
+  document.getElementById('btnRecover').onclick = showRecoveryScreen;
   setTimeout(() => lucide.createIcons(), 100);
 }
 
@@ -88,6 +91,7 @@ function handleRegister(e) {
       }
 
       const iban = `OSPT${Math.floor(Math.random() * 9000000000000000 + 1000000000000000)}`;
+      const email = `${username}@neobank.com`;
 
       const newUser = {
         username,
@@ -100,6 +104,7 @@ function handleRegister(e) {
         xp: 0,
         level: 1,
         iban: iban,
+        email: email,
         transactions: [],
         investments: [],
         achievements: [],
